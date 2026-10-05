@@ -1,0 +1,20 @@
+# Mode avion : le coffre reste lisible et un snippet écrit hors ligne part au retour du réseau.
+# Prérequis : être connecté (compte de démo amina / Demo-AfriDev-2026, voir backend/scripts/seed_demo.py).
+appId: com.afridev.exchange
+---
+- launchApp
+- tapOn: "Snippets"
+- assertVisible: "Coffre-fort 100 % hors ligne"
+- setAirplaneMode: enabled
+- assertVisible: "Hors ligne"
+- tapOn: "Créer un snippet sécurisé"
+- tapOn: "Ex. Vérification de signature webhook Wave"
+- inputText: "Snippet écrit en mode avion"
+- tapOn: "# Collez votre code ici"
+- inputText: "echo ok"
+- tapOn: "Sauvegarder dans mon coffre"
+- assertVisible: "En attente"
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible: "En attente"
+    timeout: 60000

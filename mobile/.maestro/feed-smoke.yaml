@@ -1,0 +1,14 @@
+# Parcours de base : présentation, fil, ouverture d'une discussion, onglets.
+appId: com.afridev.exchange
+---
+- launchApp:
+    clearState: true
+- tapOn: "Passer"
+- assertVisible: "Fil d’actualité"
+- scroll
+- tapOn: "Entraide"
+- assertVisible: "Questions & réponses IA"
+- tapOn: "Projets"
+- assertVisible: "Open source d’Afrique"
+- tapOn: "Profil"
+- assertVisible: "Connectez-vous pour continuer"

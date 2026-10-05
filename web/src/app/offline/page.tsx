@@ -17,9 +17,15 @@ export default function OfflinePage() {
         Cette page n&apos;a pas encore été enregistrée sur votre appareil. Les pages déjà visitées,
         votre coffre de snippets et vos brouillons restent disponibles.
       </p>
+      {/* Sans préchargement : hors ligne il échouerait, et en ligne il ajouterait ~280 Ko de JS
+          d'autres pages au budget data de cette page (e2e/low-network.spec.ts). */}
       <div className="flex flex-wrap justify-center gap-2">
-        <Link href="/snippets" className={buttonClasses()}>Mon coffre</Link>
-        <Link href="/feed" className={buttonClasses({ variant: 'ghost' })}>Le fil</Link>
+        <Link href="/snippets" prefetch={false} className={buttonClasses()}>
+          Mon coffre
+        </Link>
+        <Link href="/feed" prefetch={false} className={buttonClasses({ variant: 'ghost' })}>
+          Le fil
+        </Link>
       </div>
     </main>
   );

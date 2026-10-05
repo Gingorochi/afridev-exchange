@@ -3,14 +3,16 @@ import { expect, test } from './fixtures/network';
 const JS_BUDGET_BYTES = 300 * 1024;
 
 test('la page publique reste sous 300 Ko de JavaScript', async ({ page }) => {
-  let jsBytes = 0;
-  page.on('response', async (response) => {
-    if (response.request().resourceType() === 'script') {
-      jsBytes += (await response.body().catch(() => Buffer.alloc(0))).length;
-    }
+  // Octets réellement transférés (compressés) : c'est ce que paie le forfait data. Chaque taille
+  // est attendue avant de sommer ; lire `response.body()` en vol sous-comptait selon le timing.
+  const sizes: Promise<number>[] = [];
+  page.on('requestfinished', (request) => {
+    if (request.resourceType() === 'script') sizes.push(request.sizes().then((s) => s.responseBodySize));
   });
   await page.goto('/offline');
   await page.waitForLoadState('networkidle');
+  const jsBytes = (await Promise.all(sizes)).reduce((sum, size) => sum + size, 0);
+  expect(jsBytes).toBeGreaterThan(0);
   expect(jsBytes).toBeLessThan(JS_BUDGET_BYTES);
 });
 

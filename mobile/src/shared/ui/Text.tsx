@@ -41,6 +41,7 @@ type FeatherName = ComponentProps<typeof Feather>['name'];
 export type IconName =
   | FeatherName
   | 'arrow-big-up'
+  | 'badge-check'
   | 'code-xml'
   | 'folder-git'
   | 'languages'

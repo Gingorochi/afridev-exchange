@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from core.serializers import AuthorSerializer
+from core.serializers import AuthorSerializer, HubSummarySerializer
+from features.hubs import selectors as hub_selectors
 from features.profiles import selectors as profile_selectors
 
 from ..models import Question
@@ -12,6 +13,7 @@ class QuestionInputSerializer(serializers.Serializer):
     body = serializers.CharField(max_length=10000)
     tags = serializers.ListField(child=serializers.CharField(max_length=30), required=False)
     audio_media_id = serializers.UUIDField(required=False, allow_null=True)
+    hub_id = serializers.UUIDField(required=False, allow_null=True, help_text="Hub facultatif.")
 
 
 class QuestionUpdateSerializer(serializers.Serializer):
@@ -35,6 +37,7 @@ class QuestionOutputSerializer(serializers.Serializer):
     body = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
     audio_media_id = serializers.UUIDField(allow_null=True)
+    hub = HubSummarySerializer(allow_null=True)
     ai_answer = serializers.CharField(allow_null=True)
     ai_answer_status = serializers.ChoiceField(choices=Question.AiStatus.choices)
     ai_answer_sources = AiSourceSerializer(many=True)
@@ -86,6 +89,7 @@ class TranscribeInputSerializer(serializers.Serializer):
 def present_questions(questions) -> list[dict]:
     questions = list(questions)
     authors = profile_selectors.author_cards(user_ids={q.author_id for q in questions})
+    hubs = hub_selectors.hub_cards(hub_ids={q.hub_id for q in questions})
     return [
         {
             "id": q.id,
@@ -93,6 +97,7 @@ def present_questions(questions) -> list[dict]:
             "body": q.body,
             "tags": q.tags,
             "audio_media_id": q.audio_media_id,
+            "hub": hubs.get(q.hub_id),
             "ai_answer": q.ai_answer or None,
             "ai_answer_status": q.ai_answer_status,
             "ai_answer_sources": q.ai_answer_sources,

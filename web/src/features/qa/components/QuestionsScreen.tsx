@@ -1,15 +1,17 @@
 'use client';
 
-import { CheckCircle2, Clock, MessageCircle, MessagesSquare, Plus, Search, Sparkles, X } from 'lucide-react';
+import { CheckCircle2, CircleDashed, Clock, Layers, MessageCircle, MessagesSquare, Plus, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-import { TwoColumns } from '@/shared/layout';
+import { BookmarkButton } from '@/features/bookmarks';
+import { PageHeader, Toolbar, TwoColumns } from '@/shared/layout';
 import { cn } from '@/shared/lib';
 import { useOutbox } from '@/shared/offline';
 import { useSession } from '@/shared/session';
 import {
+  AuthorBadges,
   Avatar,
   Button,
   ButtonLink,
@@ -18,8 +20,11 @@ import {
   CommunityIcon,
   EmptyState,
   ErrorNotice,
+  HubLink,
+  KarmaPill,
+  SearchField,
+  Segmented,
   StatusBadge,
-  Tabs,
   Tag,
   TimeAgo,
 } from '@/shared/ui';
@@ -48,22 +53,17 @@ export function QuestionsScreen({ aside }: { aside?: React.ReactNode }) {
 
   return (
     <TwoColumns aside={aside}>
-      {/* En-tête façon page de communauté : bannière, icône, titre et action principale. */}
-      <section>
-        <div className="h-20 rounded-2xl bg-[linear-gradient(120deg,var(--secondary)_0%,var(--secondary-hover)_50%,var(--tertiary)_100%)] sm:h-24" aria-hidden />
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-3 px-2 sm:px-4">
-          <span className="-mt-10 flex size-20 shrink-0 items-center justify-center rounded-full border-4 border-surface bg-secondary text-white">
-            <MessagesSquare className="size-9" aria-hidden />
-          </span>
-          <div className="min-w-0 flex-1 pb-1">
-            <h1 className="text-headline-xl text-ink">Entraide & IA</h1>
-            <p className="text-body-sm text-ink-muted">Une première réponse de l&apos;IA en quelques secondes, puis la communauté.</p>
-          </div>
-          <ButtonLink href={isAuthenticated ? '/questions/new' : '/login?next=/questions/new'} className="mb-1">
+      <PageHeader
+        className="mb-2"
+        icon={<MessagesSquare aria-hidden />}
+        title="Questions & réponses"
+        description="Une première réponse de l'IA en quelques secondes, puis la communauté."
+        actions={
+          <ButtonLink href={isAuthenticated ? '/questions/new' : '/login?next=/questions/new'} className="w-full sm:w-auto">
             <Plus className="size-4" aria-hidden /> Poser une question
           </ButtonLink>
-        </div>
-      </section>
+        }
+      />
 
       <form
         role="search"
@@ -71,45 +71,39 @@ export function QuestionsScreen({ aside }: { aside?: React.ReactNode }) {
           event.preventDefault();
           update('q', search.trim() || null);
         }}
-        className="relative"
       >
-        <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-ink-faint" aria-hidden />
-        <input
-          type="search"
+        <SearchField
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Rechercher un bug, un code d'erreur, une techno…"
           aria-label="Rechercher dans les questions"
-          className="h-11 w-full rounded-full bg-container pr-4 pl-11 text-body-md text-ink placeholder:text-ink-faint focus:ring-2 focus:ring-primary/30 focus:outline-none"
+          className="[&_input]:h-12 [&_input]:text-body-lg"
         />
       </form>
 
-      <div>
-        <div className="flex items-end justify-between gap-3">
-          <Tabs<Status>
-            className="flex-1"
-            value={status}
-            onChange={(value) => update('status', value === 'all' ? null : value)}
-            options={[
-              { value: 'all', label: 'Toutes' },
-              { value: 'open', label: 'Sans solution' },
-              { value: 'resolved', label: 'Résolues' },
-            ]}
-          />
-          {tag || query ? (
-            <button
-              type="button"
-              onClick={() => {
-                setSearch('');
-                router.replace('/questions', { scroll: false });
-              }}
-              className="mb-2 inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-primary-soft px-3 text-body-sm font-semibold text-primary-ink"
-            >
-              {tag ? `d/${tag}` : `« ${query} »`} <X className="size-3.5" aria-hidden />
-            </button>
-          ) : null}
-        </div>
-      </div>
+      <Toolbar>
+        <Segmented<Status>
+          value={status}
+          onChange={(value) => update('status', value === 'all' ? null : value)}
+          options={[
+            { value: 'all', label: 'Toutes', icon: <Layers aria-hidden /> },
+            { value: 'open', label: 'Sans solution', icon: <CircleDashed aria-hidden /> },
+            { value: 'resolved', label: 'Résolues', icon: <CheckCircle2 aria-hidden /> },
+          ]}
+        />
+        {tag || query ? (
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              router.replace('/questions', { scroll: false });
+            }}
+            className="ml-auto inline-flex h-8 shrink-0 items-center gap-1 rounded-full border border-primary/20 bg-primary-soft px-3 text-body-sm font-medium text-primary-ink"
+          >
+            {tag ? `d/${tag}` : `« ${query} »`} <X className="size-3.5" aria-hidden />
+          </button>
+        ) : null}
+      </Toolbar>
 
       {pending.map((entry) => (
         <Card key={entry.id} className="flex items-start gap-3 border-dashed p-4">
@@ -137,10 +131,9 @@ export function QuestionsScreen({ aside }: { aside?: React.ReactNode }) {
           Changez de filtre ou posez votre question : l&apos;IA vous répond tout de suite.
         </EmptyState>
       ) : (
-        <ul className="-mt-2">
-          {questions.items.map((question, index) => (
+        <ul className="space-y-3">
+          {questions.items.map((question) => (
             <li key={question.id}>
-              {index ? <hr className="my-1 border-line" /> : null}
               <QuestionRow question={question} />
             </li>
           ))}
@@ -155,59 +148,102 @@ export function QuestionsScreen({ aside }: { aside?: React.ReactNode }) {
   );
 }
 
-/** Question dans une liste (bloc sans cadre, comme un post du fil) : statut, titre, extrait, tags. */
+/**
+ * Carte Q&A : compteur de réponses à gauche (vert plein si résolue, façon Stack Overflow),
+ * statut explicite [Résolu / En attente], auteur avec ses badges, hub, titre, extrait et tags.
+ */
 export function QuestionRow({ question, compact = false }: { question: Question; compact?: boolean }) {
   const name = question.author?.display_name || question.author?.username || 'Membre';
-  const [community, ...tags] = question.tags;
+  const [community, ...rest] = question.tags;
+  const tags = question.hub ? question.tags : rest;
+  const resolved = question.is_resolved;
+  const answers = question.answer_count;
   return (
-    <article className="group relative -mx-2 rounded-2xl px-2 py-2.5 transition-colors hover:bg-container-low sm:-mx-4 sm:px-4">
-      <div className="flex items-center gap-2 text-body-sm">
-        {community ? (
-          <span className="relative z-10 flex items-center gap-1.5 font-bold text-ink">
-            <CommunityIcon tag={community} size={20} />
-            <Link href={`/questions?tag=${encodeURIComponent(community)}`} className="hover:underline">
-              d/{community}
-            </Link>
-          </span>
-        ) : null}
-        {community ? <span className="text-ink-faint" aria-hidden>•</span> : null}
-        <span className="flex min-w-0 items-center gap-1.5 text-ink-muted">
-          <Avatar name={name} src={question.author?.avatar_url} size={18} />
-          <span className="truncate">{name}</span>
-        </span>
-        <span className="text-ink-faint" aria-hidden>•</span>
-        <TimeAgo date={question.created_at} className="shrink-0 text-ink-faint" />
+    <article className="group relative flex gap-4 rounded-2xl border border-line bg-card p-4 shadow-card transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-raised sm:p-5">
+      <div
+        className={cn(
+          'hidden w-16 shrink-0 flex-col items-center justify-center self-start rounded-xl border py-2 sm:flex',
+          resolved
+            ? 'border-secondary bg-secondary text-white'
+            : answers
+              ? 'border-secondary/40 text-secondary-ink'
+              : 'border-line text-ink-muted',
+        )}
+        aria-hidden
+      >
+        {resolved ? <CheckCircle2 className="mb-0.5 size-4" aria-hidden /> : null}
+        <span className="text-headline-md leading-none tabular-nums">{answers}</span>
+        <span className="mt-0.5 text-label-sm">réponse{answers > 1 ? 's' : ''}</span>
       </div>
-      <h3 className="mt-1.5 text-[1.125rem] leading-snug font-semibold text-ink">
-        <Link href={`/questions/${question.id}`} className="after:absolute after:inset-0">
-          {question.title}
-        </Link>
-      </h3>
-      {!compact && question.body ? <p className="mt-1 line-clamp-2 text-body-md text-ink-muted">{question.body}</p> : null}
-      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-        <span
-          className={cn(
-            'inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-body-sm font-semibold',
-            question.is_resolved ? 'bg-secondary text-white' : question.answer_count ? 'bg-container text-ink' : 'bg-tertiary-soft text-on-tertiary-soft',
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-label-md text-ink-faint">
+          <span className="relative z-10 flex min-w-0 items-center gap-1.5">
+            <Avatar name={name} src={question.author?.avatar_url} size={20} />
+            {question.author ? (
+              <Link href={`/u/${question.author.username}`} className="truncate text-body-sm font-medium text-ink hover:underline">
+                {name}
+              </Link>
+            ) : (
+              <span className="truncate text-body-sm font-medium text-ink">{name}</span>
+            )}
+          </span>
+          <AuthorBadges location={question.author?.location} stack={question.author?.stack} className="relative z-10" />
+          {question.author?.karma ? <KarmaPill karma={question.author.karma} /> : null}
+          <span aria-hidden>·</span>
+          <TimeAgo date={question.created_at} className="shrink-0" />
+          {question.hub ? (
+            <>
+              <span aria-hidden>·</span>
+              <HubLink hub={question.hub} className="relative z-10" />
+            </>
+          ) : community ? (
+            <>
+              <span aria-hidden>·</span>
+              <Link
+                href={`/questions?tag=${encodeURIComponent(community)}`}
+                className="relative z-10 inline-flex items-center gap-1 font-medium text-ink-muted hover:text-ink hover:underline"
+              >
+                <CommunityIcon tag={community} size={14} className="rounded-[4px]" />
+                d/{community}
+              </Link>
+            </>
+          ) : null}
+        </div>
+
+        <h3 className="mt-2 text-[1.0625rem] leading-snug font-semibold tracking-[-0.01em] text-ink transition-colors group-hover:text-primary-ink">
+          <Link href={`/questions/${question.id}`} className="after:absolute after:inset-0 after:rounded-2xl">
+            {question.title}
+          </Link>
+        </h3>
+        {!compact && question.body ? <p className="mt-1 line-clamp-2 text-body-sm text-ink-muted">{question.body}</p> : null}
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          {resolved ? (
+            <StatusBadge tone="success" dot={false}>
+              <CheckCircle2 className="size-3.5" aria-hidden /> Résolu
+            </StatusBadge>
+          ) : (
+            <StatusBadge tone="warning">En attente</StatusBadge>
           )}
-        >
-          {question.is_resolved ? <CheckCircle2 className="size-4" aria-hidden /> : <MessageCircle className="size-4" aria-hidden />}
-          {question.is_resolved
-            ? 'Résolue'
-            : question.answer_count
-              ? `${question.answer_count} réponse${question.answer_count > 1 ? 's' : ''}`
-              : 'En attente de réponse'}
-        </span>
-        {question.ai_answer_status === 'ready' ? (
-          <span className="inline-flex h-7 items-center gap-1 rounded-full bg-primary-soft px-2.5 text-body-sm font-semibold text-primary-ink">
-            <Sparkles className="size-3.5" aria-hidden /> Réponse IA
+          {/* Sur téléphone, le compteur de gauche est masqué : le nombre de réponses passe ici. */}
+          <span className="inline-flex h-6 items-center gap-1 text-label-md text-ink-muted sm:hidden">
+            <MessageCircle className="size-3.5" aria-hidden /> {answers} réponse{answers > 1 ? 's' : ''}
           </span>
-        ) : null}
-        {tags.slice(0, 3).map((tag) => (
-          <span key={tag} className="relative z-10">
-            <Tag href={`/questions?tag=${encodeURIComponent(tag)}`}>{tag}</Tag>
+          {question.ai_answer_status === 'ready' ? (
+            <StatusBadge tone="primary" dot={false}>
+              <Sparkles className="size-3" aria-hidden /> Réponse IA
+            </StatusBadge>
+          ) : null}
+          {tags.slice(0, 3).map((tag) => (
+            <span key={tag} className="relative z-10">
+              <Tag href={`/questions?tag=${encodeURIComponent(tag)}`}>{tag}</Tag>
+            </span>
+          ))}
+          <span className="relative z-10 ml-auto">
+            <BookmarkButton target={{ type: 'question', id: question.id }} title={question.title} />
           </span>
-        ))}
+        </div>
       </div>
     </article>
   );

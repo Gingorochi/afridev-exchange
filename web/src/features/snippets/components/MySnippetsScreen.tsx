@@ -11,15 +11,15 @@ import {
   Lock,
   Pencil,
   Plane,
+  Layers,
   Plus,
-  Search,
   ShieldCheck,
   Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { PageHeader } from '@/shared/layout';
+import { PageHeader, Toolbar, TwoColumns } from '@/shared/layout';
 import { formatBytes, utf8Size } from '@/shared/lib';
 import { useOutbox, useStorageEstimate } from '@/shared/offline';
 import {
@@ -27,19 +27,17 @@ import {
   ButtonLink,
   Card,
   CardSkeleton,
-  CodeBlock,
-  CopyButton,
   EmptyState,
   ErrorNotice,
   FilterChips,
-  Input,
+  SearchField,
   Segmented,
+  SideCard,
   StatusBadge,
-  Tag,
-  TimeAgo,
 } from '@/shared/ui';
 
 import { type Snippet, useMySnippets, useSnippetActions } from '../api';
+import { SnippetCard } from './SnippetCard';
 
 type Visibility = 'all' | 'public' | 'private';
 
@@ -78,14 +76,16 @@ export function MySnippetsScreen() {
   const publicCount = snippets.items.filter((snippet) => snippet.is_public).length;
 
   return (
-    <>
+    <TwoColumns aside={<VaultAside count={snippets.items.length} size={totalSize} synced={snippets.source === 'local'} />}>
       <PageHeader
-        title="Mon coffre-fort de snippets"
-        description="Commandes, scripts et recettes d'intégration, accessibles même sans réseau. Vos snippets privés ne quittent jamais votre compte."
+        className="mb-2"
+        icon={<Code2 aria-hidden />}
+        title="Snippets"
+        description="Votre coffre : commandes, scripts et recettes d'intégration, accessibles même sans réseau."
         actions={
           <>
             <Button variant="ghost" onClick={() => downloadJson(snippets.items)} disabled={!snippets.items.length}>
-              <Download className="size-4" aria-hidden /> Exporter (JSON)
+              <Download className="size-4" aria-hidden /> Exporter
             </Button>
             <ButtonLink href="/snippets/new">
               <Plus className="size-4" aria-hidden /> Nouveau snippet
@@ -93,193 +93,180 @@ export function MySnippetsScreen() {
           </>
         }
       />
-      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-line bg-container-low px-4 py-2 text-body-sm text-ink-muted">
-        <CheckCircle2 className="size-4 text-secondary-ink" aria-hidden />
-        <span>{snippets.items.length} snippets</span>
-        <span aria-hidden>·</span>
-        <span>{snippets.source === 'local' ? 'Copie SQLite synchronisée' : 'Cache local actif'}</span>
-        <span aria-hidden>·</span>
-        <span>Empreinte : {formatBytes(totalSize)}</span>
-      </div>
+      <Toolbar>
+        <Segmented
+          value={visibility}
+          onChange={setVisibility}
+          options={[
+            { value: 'all', label: 'Tous', icon: <Layers aria-hidden />, count: snippets.items.length },
+            { value: 'public', label: 'Publics', icon: <Globe aria-hidden />, count: publicCount },
+            { value: 'private', label: 'Privés', icon: <Lock aria-hidden />, count: snippets.items.length - publicCount },
+          ]}
+        />
+        <SearchField
+          className="w-full sm:ml-auto sm:w-64"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Titre, fonction, tag…"
+          aria-label="Rechercher dans mes snippets"
+        />
+      </Toolbar>
+      {languages.length > 1 ? (
+        <FilterChips
+          value={language}
+          onChange={setLanguage}
+          options={[
+            { value: 'all', label: `Tous les langages (${snippets.items.length})` },
+            ...languages.map(([lang, count]) => ({ value: lang, label: `${lang} (${count})` })),
+          ]}
+        />
+      ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="min-w-0 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-faint" aria-hidden />
-              <Input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Rechercher dans mes snippets, fonctions, tags…"
-                aria-label="Rechercher dans mes snippets"
-                className="pl-9"
-              />
-            </div>
-            <Segmented
-              value={visibility}
-              onChange={setVisibility}
-              options={[
-                { value: 'all', label: 'Tous', count: snippets.items.length },
-                { value: 'public', label: 'Publics', count: publicCount },
-                { value: 'private', label: 'Privés', count: snippets.items.length - publicCount },
-              ]}
-            />
-          </div>
-          {languages.length > 1 ? (
-            <FilterChips
-              value={language}
-              onChange={setLanguage}
-              options={[
-                { value: 'all', label: `Tous (${snippets.items.length})` },
-                ...languages.map(([lang, count]) => ({ value: lang, label: `${lang} (${count})` })),
-              ]}
-            />
-          ) : null}
+      {pending.map((entry) => (
+        <Card key={entry.id} className="flex items-center gap-3 border-dashed p-4">
+          <Clock className="size-4 text-offline" aria-hidden />
+          <span className="flex-1 font-semibold">{String(entry.data.title)}</span>
+          <StatusBadge tone="offline">En attente de réseau</StatusBadge>
+        </Card>
+      ))}
 
-          {pending.map((entry) => (
-            <Card key={entry.id} className="flex items-center gap-3 border-dashed p-4">
-              <Clock className="size-4 text-offline" aria-hidden />
-              <span className="flex-1 font-semibold">{String(entry.data.title)}</span>
-              <StatusBadge tone="offline">En attente de réseau</StatusBadge>
-            </Card>
-          ))}
-
-          {snippets.isPending ? (
-            <>
-              <CardSkeleton lines={4} />
-              <CardSkeleton lines={4} />
-            </>
-          ) : snippets.isError && !snippets.items.length ? (
-            <ErrorNotice message="Votre coffre s'affichera dès le retour du réseau, puis restera disponible hors ligne." />
-          ) : !visible.length ? (
-            <EmptyState
-              icon={<Code2 className="size-8" aria-hidden />}
-              title={snippets.items.length ? 'Aucun snippet ne correspond' : 'Votre coffre est vide'}
-              action={<ButtonLink href="/snippets/new">Ajouter un snippet</ButtonLink>}
-            >
-              Gardez ici vos commandes Docker, scripts USSD ou recettes mobile money pour les retrouver
-              même sans connexion.
-            </EmptyState>
-          ) : (
-            visible.map((snippet) => <SnippetCard key={snippet.id} snippet={snippet} />)
-          )}
-          {snippets.source === 'api' && snippets.remote.hasNextPage ? (
-            <Button variant="ghost" className="w-full" onClick={() => snippets.remote.fetchNextPage()} loading={snippets.remote.isFetchingNextPage}>
-              Charger plus
-            </Button>
-          ) : null}
-        </div>
-        <VaultAside />
-      </div>
-    </>
+      {snippets.isPending ? (
+        <>
+          <CardSkeleton lines={4} />
+          <CardSkeleton lines={4} />
+        </>
+      ) : snippets.isError && !snippets.items.length ? (
+        <ErrorNotice message="Votre coffre s'affichera dès le retour du réseau, puis restera disponible hors ligne." />
+      ) : !visible.length ? (
+        <EmptyState
+          icon={<Code2 className="size-8" aria-hidden />}
+          title={snippets.items.length ? 'Aucun snippet ne correspond' : 'Votre coffre est vide'}
+          action={<ButtonLink href="/snippets/new">Ajouter un snippet</ButtonLink>}
+        >
+          Gardez ici vos commandes Docker, scripts USSD ou recettes mobile money pour les retrouver même sans connexion.
+        </EmptyState>
+      ) : (
+        visible.map((snippet) => <VaultSnippetCard key={snippet.id} snippet={snippet} />)
+      )}
+      {snippets.source === 'api' && snippets.remote.hasNextPage ? (
+        <Button variant="ghost" className="w-full" onClick={() => snippets.remote.fetchNextPage()} loading={snippets.remote.isFetchingNextPage}>
+          Charger plus
+        </Button>
+      ) : null}
+    </TwoColumns>
   );
 }
 
-function SnippetCard({ snippet }: { snippet: Snippet }) {
+function VaultSnippetCard({ snippet }: { snippet: Snippet }) {
   const { publish, remove } = useSnippetActions();
   const review = snippet.ai_review as { risky?: boolean; reasons?: string[] };
   const flagged = Boolean(review?.risky) && !snippet.is_public;
-  const preview = snippet.content.split('\n').slice(0, 6).join('\n');
+  const icon = 'flex size-8 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-container hover:text-ink';
 
   return (
-    <Card className="space-y-3 p-4">
-      {flagged ? (
-        <div className="flex gap-3 rounded-lg border border-danger/30 bg-danger-soft p-3 text-on-danger-soft">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
-          <p className="text-body-sm">
-            <span className="font-mono font-semibold uppercase">Retiré de la publication : donnée sensible probable.</span>{' '}
-            {review.reasons?.join(' ') ?? ''} Corrigez-le puis republiez.
-          </p>
-        </div>
-      ) : null}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1.5">
-          <div className="flex flex-wrap gap-1.5">
-            <StatusBadge dot={false}>{snippet.language}</StatusBadge>
-            {snippet.is_public ? (
-              <StatusBadge tone="primary" dot={false}><Globe className="size-3" aria-hidden /> Public</StatusBadge>
-            ) : (
-              <StatusBadge dot={false}><Lock className="size-3" aria-hidden /> Privé</StatusBadge>
-            )}
-            <StatusBadge tone="success" dot={false}><CheckCircle2 className="size-3" aria-hidden /> Dispo hors ligne</StatusBadge>
+    <SnippetCard
+      bookmark={false}
+      previewLines={6}
+      snippet={{ ...snippet, date: snippet.updated_at }}
+      banner={
+        flagged ? (
+          <div className="flex gap-3 rounded-lg border border-danger/25 bg-danger-soft p-3 text-on-danger-soft">
+            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <p className="text-body-sm">
+              <span className="font-semibold">Retiré de la publication : donnée sensible probable.</span>{' '}
+              {review.reasons?.join(' ') ?? ''} Corrigez-le puis republiez.
+            </p>
           </div>
-          <h2 className="text-headline-md">
-            <Link href={`/snippets/${snippet.id}`} className="hover:text-primary-ink">{snippet.title}</Link>
-          </h2>
-        </div>
-        <div className="flex items-center gap-1">
-          <CopyButton text={snippet.content} label="" className="size-9 justify-center rounded text-ink-muted hover:bg-container" />
-          <Link href={`/snippets/${snippet.id}/edit`} aria-label="Modifier" className="flex size-9 items-center justify-center rounded text-ink-muted hover:bg-container">
+        ) : null
+      }
+      badges={
+        <>
+          {snippet.is_public ? (
+            <StatusBadge tone="primary" dot={false}><Globe className="size-3" aria-hidden /> Public</StatusBadge>
+          ) : (
+            <StatusBadge dot={false}><Lock className="size-3" aria-hidden /> Privé</StatusBadge>
+          )}
+          <StatusBadge tone="success" dot={false}><CheckCircle2 className="size-3" aria-hidden /> Dispo hors ligne</StatusBadge>
+        </>
+      }
+      actions={
+        <>
+          <Link href={`/snippets/${snippet.id}/edit`} aria-label="Modifier" title="Modifier" className={icon}>
             <Pencil className="size-4" aria-hidden />
           </Link>
           <button
             type="button"
             aria-label="Supprimer"
+            title="Supprimer"
             onClick={() => window.confirm('Supprimer ce snippet ?') && remove.mutate(snippet.id)}
-            className="flex size-9 items-center justify-center rounded text-ink-muted hover:bg-container hover:text-danger"
+            className={`${icon} hover:text-danger`}
           >
             <Trash2 className="size-4" aria-hidden />
           </button>
-        </div>
-      </div>
-      <CodeBlock code={preview} language={snippet.language} maxHeight={180} />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          {snippet.tags.map((tag) => (
-            <Tag key={tag}>{tag}</Tag>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 text-label-md text-ink-muted">
-          <span>Mis à jour <TimeAgo date={snippet.updated_at} /> · {formatBytes(utf8Size(snippet.content))}</span>
+        </>
+      }
+      footer={
+        <>
           <Button
-            variant={snippet.is_public ? 'ghost' : 'secondary'}
+            variant={snippet.is_public ? 'outline' : 'secondary'}
             size="sm"
             loading={publish.isPending}
             onClick={() => publish.mutate({ id: snippet.id, value: !snippet.is_public })}
           >
             {snippet.is_public ? 'Rendre privé' : 'Publier'}
           </Button>
-        </div>
-      </div>
-      {publish.isError ? <p className="text-body-sm text-danger">{publish.error.message}</p> : null}
-    </Card>
+          {publish.isError ? <p className="basis-full text-body-sm text-danger">{publish.error.message}</p> : null}
+        </>
+      }
+    />
   );
 }
 
-function VaultAside() {
+function VaultAside({ count, size, synced }: { count: number; size: number; synced: boolean }) {
   const storage = useStorageEstimate();
   return (
-    <aside className="space-y-4">
-      <Card className="space-y-3 p-4">
-        <h2 className="flex items-center justify-between text-headline-md">
-          Espace coffre local <Database className="size-5 text-secondary-ink" aria-hidden />
-        </h2>
-        {storage ? (
-          <>
-            <div className="flex justify-between text-body-sm text-ink-muted">
-              <span>Stockage utilisé</span>
-              <span>{formatBytes(storage.usage)}</span>
+    <>
+      <SideCard title="Mon coffre" icon={<Database aria-hidden />}>
+        <div className="space-y-3 px-4 pb-4">
+          <dl className="grid grid-cols-2 gap-3">
+            <div>
+              <dt className="text-label-md text-ink-faint">Snippets</dt>
+              <dd className="text-headline-md text-ink tabular-nums">{count}</dd>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-sm bg-container-high">
-              <div className="h-full bg-secondary" style={{ width: `${Math.min(100, Math.max(2, (storage.usage / (50 * 1024 * 1024)) * 100))}%` }} />
+            <div>
+              <dt className="text-label-md text-ink-faint">Empreinte</dt>
+              <dd className="text-headline-md text-ink tabular-nums">{formatBytes(size)}</dd>
             </div>
-          </>
-        ) : null}
-        <p className="flex items-center justify-between rounded-lg border border-line bg-container-low px-3 py-2 text-body-sm">
-          <span className="flex items-center gap-2"><ShieldCheck className="size-4 text-secondary-ink" aria-hidden /> Security Guard</span>
-          <span className="text-label-md text-secondary-ink">Actif hors ligne</span>
+          </dl>
+          {storage ? (
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-label-md text-ink-faint">
+                <span>Stockage local</span>
+                <span className="tabular-nums">{formatBytes(storage.usage)} / 50 Mo</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-container-high">
+                <div
+                  className="h-full rounded-full bg-secondary"
+                  style={{ width: `${Math.min(100, Math.max(2, (storage.usage / (50 * 1024 * 1024)) * 100))}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+          <p className="flex items-center gap-2 text-body-sm text-ink-muted">
+            <CheckCircle2 className="size-4 shrink-0 text-secondary-ink" aria-hidden />
+            {synced ? 'Copie SQLite synchronisée' : 'Cache local actif'}
+          </p>
+          <p className="flex items-center gap-2 text-body-sm text-ink-muted">
+            <ShieldCheck className="size-4 shrink-0 text-secondary-ink" aria-hidden /> Security Guard actif, même hors ligne
+          </p>
+        </div>
+      </SideCard>
+      <SideCard title="Mode voyageur / 2G" icon={<Plane aria-hidden />}>
+        <p className="px-4 pb-4 text-body-sm text-ink-muted">
+          Hors couverture, votre coffre reste consultable et modifiable : les changements partent dès que le réseau
+          revient. Exportez-le en JSON pour une copie de secours.
         </p>
-      </Card>
-      <Card className="space-y-2 p-4">
-        <h2 className="flex items-center gap-2 font-semibold text-ink">
-          <Plane className="size-4 text-primary-ink" aria-hidden /> Mode voyageur / 2G
-        </h2>
-        <p className="text-body-sm text-ink-muted">
-          Hors couverture, votre coffre reste consultable et modifiable : les changements partent
-          dès que le réseau revient. Exportez-le en JSON pour une copie de secours.
-        </p>
-      </Card>
-    </aside>
+      </SideCard>
+    </>
   );
 }

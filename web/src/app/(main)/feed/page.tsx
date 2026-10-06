@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-import { FeedScreen, PopularCommunitiesCard } from '@/features/feed';
-import { RecruitingProjectsCard } from '@/features/projects';
+import { FeedScreen, TrendingCard } from '@/features/feed';
+import { RecommendedHubsCard } from '@/features/hubs';
+import { RecentJobsCard, UpcomingEventsCard } from '@/features/jobs-events';
 import { OpenQuestionsCard } from '@/features/qa';
 import { CardSkeleton } from '@/shared/ui';
 
@@ -14,9 +15,11 @@ export default function FeedPage() {
       <FeedScreen
         aside={
           <>
-            <PopularCommunitiesCard />
+            <TrendingCard />
+            <RecommendedHubsCard />
+            <RecentJobsCard />
+            <UpcomingEventsCard />
             <OpenQuestionsCard title="Entraide prioritaire" />
-            <RecruitingProjectsCard />
           </>
         }
       />

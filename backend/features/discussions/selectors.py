@@ -35,3 +35,14 @@ def comment_stats(*, since) -> dict:
 
 def comments_per_day(*, since) -> dict[str, int]:
     return count_per_day(Comment.objects.alive(), since=since)
+
+
+def export_for_user(*, user_id) -> dict:
+    """Données personnelles (export RGPD)."""
+    return {
+        "comments": list(
+            Comment.objects.filter(author_id=user_id).values(
+                "id", "post_id", "parent_id", "body", "created_at", "deleted_at"
+            )
+        )
+    }

@@ -30,3 +30,12 @@ def test_request_ai_bio_returns_202(auth_client, fake_llm):
     response = auth_client.post("/api/profiles/me/ai-bio/")
     assert response.status_code == 202
     assert auth_client.get("/api/profiles/me/").data["ai_bio_status"] == "ready"
+
+
+def test_accent_color(auth_client, user):
+    updated = auth_client.patch("/api/profiles/me/", {"accent_color": "teal"}, format="json")
+    assert updated.status_code == 200 and updated.data["accent_color"] == "teal"
+    invalid = auth_client.patch("/api/profiles/me/", {"accent_color": "fuchsia"}, format="json")
+    assert invalid.status_code == 400
+    reset = auth_client.patch("/api/profiles/me/", {"accent_color": ""}, format="json")
+    assert reset.data["accent_color"] == ""

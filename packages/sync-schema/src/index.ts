@@ -23,6 +23,7 @@ const posts = new Table(
     body: column.text,
     poll_options: column.text, // JSON
     media_id: column.text,
+    hub_id: column.text,
     created_at: column.text,
     updated_at: column.text,
   },
@@ -46,6 +47,7 @@ const questions = new Table(
     body: column.text,
     tags: column.text, // JSON
     ai_answer: column.text,
+    hub_id: column.text,
     created_at: column.text,
     updated_at: column.text,
   },
@@ -71,6 +73,7 @@ const snippets = new Table(
     content: column.text,
     tags: column.text, // JSON
     is_public: column.integer,
+    hub_id: column.text,
     created_at: column.text,
     updated_at: column.text,
   },

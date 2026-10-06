@@ -1,14 +1,6 @@
-import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-import { NotificationsScreen } from '@/features/notifications';
-import { RequireAuth } from '@/shared/session';
-
-export const metadata: Metadata = { title: 'Notifications' };
-
+/** Les notifications vivent dans le panneau de la cloche : l'ancienne page renvoie au fil. */
 export default function NotificationsPage() {
-  return (
-    <RequireAuth>
-      <NotificationsScreen />
-    </RequireAuth>
-  );
+  redirect('/feed');
 }

@@ -1,17 +1,31 @@
 'use client';
 
 import { questionSchema } from '@afridev/validation';
-import { CheckCircle2, Lightbulb, Lock, Save, Send, Sparkles, Zap } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Lightbulb, Lock, MessagesSquare, Save, Send, Sparkles, Zap } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
+import { HubPicker, type PickedHub, toPickedHub, useHub } from '@/features/hubs';
 import { errorMessage } from '@/shared/api';
 import { DraftStatus, useAutosaveDraft } from '@/shared/drafts';
 import { useDebounced } from '@/shared/hooks';
-import { PageHeader } from '@/shared/layout';
+import { PageContainer, PageHeader } from '@/shared/layout';
 import { redactSecrets, SecretAlert, useSecretScan } from '@/shared/security-guard';
-import { Button, Card, Field, Input, MarkdownEditor, Spinner, StatusBadge, TagInput, useToast } from '@/shared/ui';
+import {
+  Button,
+  Field,
+  FormCard,
+  FormError,
+  FormFooter,
+  FormSection,
+  Input,
+  MarkdownEditor,
+  Spinner,
+  TagInput,
+  TipCard,
+  useToast,
+} from '@/shared/ui';
 
 import { askQuestion, rephraseQuestion, useSimilarQuestions } from '../api';
 import { VoiceButton } from './VoiceButton';
@@ -27,8 +41,13 @@ const TAG_SUGGESTIONS = ['mobile-money', 'ussd', 'django', 'react-native', 'flut
 
 export function AskQuestionScreen() {
   const router = useRouter();
+  const params = useSearchParams();
   const toast = useToast();
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  // undefined = pas encore choisi : le hub de la page d'origine (?hub=) est proposé par défaut.
+  const [hubChoice, setHub] = useState<PickedHub | null>();
+  const presetHub = useHub(params.get('hub') ?? '');
+  const hub = hubChoice !== undefined ? hubChoice : presetHub.data ? toPickedHub(presetHub.data) : null;
   const [audioId, setAudioId] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<{ title: string; body: string } | null>(null);
   const [rephrasing, setRephrasing] = useState(false);
@@ -60,7 +79,7 @@ export function AskQuestionScreen() {
     }
     setPublishing(true);
     try {
-      const outcome = await askQuestion({ ...parsed.data, audio_media_id: audioId });
+      const outcome = await askQuestion({ ...parsed.data, audio_media_id: audioId, hub_id: hub?.id ?? null });
       await autosave.clear();
       if (outcome.queued) {
         toast('Hors ligne : votre question partira au retour du réseau.', 'queued');
@@ -75,150 +94,154 @@ export function AskQuestionScreen() {
   }
 
   return (
-    <>
+    <PageContainer>
       <PageHeader
+        icon={<MessagesSquare aria-hidden />}
         eyebrow={
-          <>
-            <Link href="/questions" className="hover:underline">Entraide & IA</Link> / Poser une question
-          </>
+          <Link href="/questions" className="inline-flex items-center gap-1 hover:underline">
+            <ArrowLeft className="size-3.5" aria-hidden /> Q&amp;A
+          </Link>
         }
-        title="Poser une question technique"
+        title="Poser une question"
+        description="Une première réponse de l'IA en quelques secondes, puis celle de la communauté."
         actions={<DraftStatus savedAt={autosave.savedAt} />}
       />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <Card className="space-y-6 p-4 sm:p-6">
-          <Field
-            label="Titre clair et précis de votre blocage"
-            required
-            hint="Résumez le problème, l'environnement et le service concerné."
-            counter={`${draft.title.length} / 200`}
-            htmlFor="title"
-          >
-            <Input
-              id="title"
-              value={draft.title}
-              maxLength={200}
-              placeholder="Ex. Comment sécuriser un webhook T-Money avec FastAPI ?"
-              onChange={(event) => setDraft({ ...draft, title: event.target.value })}
-            />
-          </Field>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <FormCard>
+          <FormSection title="Votre blocage" description="Un titre précis attire les bonnes personnes ; les détails leur permettent de répondre.">
+            <Field
+              label="Titre"
+              required
+              hint="Résumez le problème, l'environnement et le service concerné."
+              counter={`${draft.title.length} / 200`}
+              htmlFor="title"
+            >
+              <Input
+                id="title"
+                value={draft.title}
+                maxLength={200}
+                placeholder="Ex. Comment sécuriser un webhook T-Money avec FastAPI ?"
+                onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+              />
+            </Field>
 
-          <div className="flex flex-wrap items-start gap-3 rounded-lg bg-container-low p-3">
-            <VoiceButton
-              onTranscript={(text, mediaId) => {
-                setAudioId(mediaId);
-                setDraft((current) => ({ ...current, body: current.body ? `${current.body}\n\n${text}` : text }));
-              }}
-            />
-            <Button onClick={rephrase} loading={rephrasing} disabled={!draft.title.trim() || !draft.body.trim() || locked}>
-              <Sparkles className="size-4" aria-hidden /> Améliorer avec l&apos;IA
-            </Button>
-          </div>
+            <Field label="Détails" required hint="Contexte, ce que vous avez essayé, message d'erreur. Le code va dans un bloc ```." htmlFor="body">
+              <MarkdownEditor
+                id="body"
+                value={draft.body}
+                maxLength={10000}
+                invalid={locked}
+                placeholder="Décrivez votre problème…"
+                onChange={(body) => setDraft({ ...draft, body })}
+              />
+            </Field>
 
-          {suggestion ? (
-            <div className="space-y-3 rounded-lg border border-tertiary/40 bg-tertiary-soft/50 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <p className="flex items-center gap-2 font-semibold text-on-tertiary-soft">
-                  <Lightbulb className="size-4" aria-hidden /> Suggestion de reformulation
-                </p>
-                <StatusBadge tone="warning" dot={false}>Recommandé</StatusBadge>
-              </div>
-              <div className="space-y-1 rounded-lg border border-line bg-card p-3">
-                <p className="font-semibold text-ink">« {suggestion.title} »</p>
-                <p className="line-clamp-4 whitespace-pre-wrap text-body-sm text-ink-muted">{suggestion.body}</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setDraft({ ...draft, title: suggestion.title, body: suggestion.body });
-                    setSuggestion(null);
-                  }}
-                >
-                  <CheckCircle2 className="size-4" aria-hidden /> Accepter la reformulation
-                </Button>
-                <Button variant="subtle" size="sm" onClick={() => setSuggestion(null)}>
-                  Refuser
-                </Button>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <VoiceButton
+                onTranscript={(text, mediaId) => {
+                  setAudioId(mediaId);
+                  setDraft((current) => ({ ...current, body: current.body ? `${current.body}\n\n${text}` : text }));
+                }}
+              />
+              <Button variant="outline" onClick={rephrase} loading={rephrasing} disabled={!draft.title.trim() || !draft.body.trim() || locked}>
+                <Sparkles className="size-4 text-primary" aria-hidden /> Améliorer avec l&apos;IA
+              </Button>
             </div>
-          ) : null}
 
-          <Field label="Détails" required hint="Contexte, ce que vous avez essayé, message d'erreur. Le code va dans un bloc ```." htmlFor="body">
-            <MarkdownEditor
-              id="body"
-              value={draft.body}
-              maxLength={10000}
-              invalid={locked}
-              placeholder="Décrivez votre problème…"
-              onChange={(body) => setDraft({ ...draft, body })}
+            {suggestion ? (
+              <div className="space-y-3 rounded-xl border border-primary/25 bg-primary-soft/40 p-4">
+                <p className="flex items-center gap-2 text-body-sm font-semibold text-primary-ink">
+                  <Lightbulb className="size-4" aria-hidden /> Reformulation proposée par l&apos;IA
+                </p>
+                <div className="space-y-1 rounded-lg border border-line bg-card p-3">
+                  <p className="font-semibold text-ink">{suggestion.title}</p>
+                  <p className="line-clamp-4 whitespace-pre-wrap text-body-sm text-ink-muted">{suggestion.body}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setDraft({ ...draft, title: suggestion.title, body: suggestion.body });
+                      setSuggestion(null);
+                    }}
+                  >
+                    <CheckCircle2 className="size-4" aria-hidden /> Utiliser cette version
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSuggestion(null)}>
+                    Garder la mienne
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            <SecretAlert
+              findings={findings}
+              onRedact={() => setDraft({ ...draft, title: redactSecrets(draft.title), body: redactSecrets(draft.body) })}
             />
-          </Field>
+          </FormSection>
 
-          <SecretAlert
-            findings={findings}
-            onRedact={() => setDraft({ ...draft, title: redactSecrets(draft.title), body: redactSecrets(draft.body) })}
-          />
+          <FormSection title="Classement" description="Aide la question à arriver devant les bons experts.">
+            <Field label="Tags techniques" hint="Jusqu'à 5 tags." htmlFor="tags">
+              <TagInput id="tags" value={draft.tags} onChange={(tags) => setDraft({ ...draft, tags })} suggestions={TAG_SUGGESTIONS} />
+            </Field>
+            <Field label="Hub" hint="Facultatif : la communauté qui verra votre question en premier.">
+              <HubPicker value={hub} onChange={setHub} />
+            </Field>
+            {error ? <FormError>{error}</FormError> : null}
+          </FormSection>
 
-          <Field label="Tags techniques" hint="Jusqu'à 5 tags pour orienter votre question vers les bons experts." htmlFor="tags">
-            <TagInput id="tags" value={draft.tags} onChange={(tags) => setDraft({ ...draft, tags })} suggestions={TAG_SUGGESTIONS} />
-          </Field>
-
-          {error ? <p role="alert" className="text-body-sm text-danger">{error}</p> : null}
-
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-            <Button variant="ghost" onClick={() => toast('Brouillon enregistré sur cet appareil.')}>
-              <Save className="size-4" aria-hidden /> Brouillon enregistré localement
+          <FormFooter
+            start={
+              <span className="inline-flex items-center gap-2">
+                <Save className="size-4" aria-hidden /> Brouillon gardé sur cet appareil
+              </span>
+            }
+          >
+            <Button variant="ghost" onClick={() => router.back()}>
+              Annuler
             </Button>
-            <Button size="lg" onClick={publish} loading={publishing} disabled={locked}>
+            <Button onClick={publish} loading={publishing} disabled={locked}>
               {locked ? <Lock className="size-4" aria-hidden /> : <Send className="size-4" aria-hidden />}
               {locked ? 'Publication verrouillée' : 'Publier la question'}
             </Button>
-          </div>
-
-          <p className="flex items-start gap-2 rounded-lg bg-container-low p-3 text-body-sm text-ink-muted">
-            <Zap className="mt-0.5 size-4 shrink-0 text-primary-ink" aria-hidden />
-            Votre question recevra une première réponse de l&apos;IA en quelques secondes, puis sera
-            proposée aux développeurs de la communauté.
-          </p>
-        </Card>
+          </FormFooter>
+        </FormCard>
 
         <aside className="space-y-4">
-          <Card className="space-y-3 p-4">
-            <h2 className="flex items-center justify-between gap-2 text-headline-md">
-              Questions déjà résolues
+          <section className="space-y-3 rounded-2xl border border-line bg-card p-4 shadow-card">
+            <h2 className="flex items-center justify-between gap-2 text-body-sm font-semibold text-ink">
+              <span className="flex items-center gap-2">
+                <CheckCircle2 className="size-4 text-secondary-ink" aria-hidden /> Déjà résolu ?
+              </span>
               {similar.isFetching ? <Spinner className="size-4 text-ink-faint" /> : null}
             </h2>
-            <p className="text-body-sm text-ink-muted">Une réponse existe peut-être déjà :</p>
             {similar.data?.length ? (
               <ul className="space-y-2">
                 {similar.data.map((hit) => (
                   <li key={hit.source_id}>
-                    <Link href={hit.url} className="flex items-start gap-2 rounded-lg border border-line bg-container-low p-3 hover:border-primary">
-                      <span className="min-w-0 flex-1 text-body-sm font-medium text-ink">{hit.title}</span>
-                      <CheckCircle2 className="size-4 shrink-0 text-secondary-ink" aria-hidden />
+                    <Link
+                      href={hit.url}
+                      className="block rounded-xl border border-line bg-container-low/60 px-3 py-2.5 text-body-sm font-medium text-ink transition-colors hover:border-primary/40 hover:bg-card"
+                    >
+                      {hit.title}
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-label-md text-ink-faint">
-                {draft.title.length < 15 ? 'Commencez à écrire votre titre…' : 'Aucune question similaire trouvée.'}
+              <p className="text-body-sm text-ink-muted">
+                {draft.title.length < 15
+                  ? 'Les questions similaires déjà résolues apparaîtront ici pendant que vous écrivez.'
+                  : 'Aucune question similaire trouvée.'}
               </p>
             )}
-          </Card>
-          <Card className="space-y-2 border-primary/20 bg-primary-soft/30 p-4">
-            <h2 className="flex items-center gap-2 font-semibold text-primary-ink">
-              <Lightbulb className="size-4" aria-hidden /> Pour une réponse rapide
-            </h2>
-            <p className="text-body-sm text-ink-muted">
-              Donnez le code minimal qui reproduit le problème et masquez vos identifiants réels :
-              utilisez ceux de test (sandbox Flooz, T-Money, Wave).
-            </p>
-          </Card>
+          </section>
+          <TipCard tone="primary" icon={<Zap aria-hidden />} title="Pour une réponse rapide">
+            <p>Donnez le code minimal qui reproduit le problème, et le message d&apos;erreur exact.</p>
+            <p>Masquez vos identifiants réels : utilisez ceux de test (sandbox Flooz, T-Money, Wave).</p>
+          </TipCard>
         </aside>
       </div>
-    </>
+    </PageContainer>
   );
 }

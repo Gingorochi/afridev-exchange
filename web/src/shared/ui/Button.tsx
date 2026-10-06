@@ -4,30 +4,33 @@ import type { ComponentProps } from 'react';
 import { cn } from '@/shared/lib';
 
 /**
- * - primary : action principale (terracotta) ;
+ * Bouton façon shadcn/ui (coins de 10 px, hauteur fixe, focus visible) :
+ * - primary : action principale (terre cuite) ;
  * - secondary : action positive (vert) ;
- * - ghost : action secondaire, contour fin ;
- * - plain : action discrète sans contour (barres d'actions des posts) ;
+ * - outline (alias ghost) : action secondaire, contour fin ;
+ * - plain : action discrète sans contour (barres d'actions) ;
  * - subtle : fond gris doux ;
  * - danger, link.
  */
-type Variant = 'primary' | 'secondary' | 'ghost' | 'plain' | 'subtle' | 'danger' | 'link';
-type Size = 'sm' | 'md' | 'lg';
+type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'plain' | 'subtle' | 'danger' | 'link';
+type Size = 'sm' | 'md' | 'lg' | 'icon';
 
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-primary text-on-primary hover:bg-primary-hover',
-  secondary: 'bg-secondary text-white hover:bg-secondary-hover',
-  ghost: 'border border-line-strong bg-card text-ink hover:border-ink-faint hover:bg-container-low',
+  primary: 'bg-primary text-on-primary shadow-card hover:bg-primary-hover',
+  secondary: 'bg-secondary text-white shadow-card hover:bg-secondary-hover',
+  outline: 'border border-line bg-card text-ink shadow-card hover:bg-container-low hover:border-line-strong',
+  ghost: 'border border-line bg-card text-ink shadow-card hover:bg-container-low hover:border-line-strong',
   plain: 'bg-transparent text-ink-muted hover:bg-container hover:text-ink',
   subtle: 'bg-container text-ink hover:bg-container-high',
-  danger: 'bg-danger text-white hover:opacity-90',
+  danger: 'bg-danger text-white shadow-card hover:opacity-90',
   link: 'px-0 text-primary-ink underline-offset-4 hover:underline',
 };
 
 const SIZES: Record<Size, string> = {
   sm: 'h-8 gap-1.5 px-3 text-body-sm',
-  md: 'h-10 gap-2 px-4 text-body-md',
-  lg: 'h-12 gap-2 px-6 text-body-lg',
+  md: 'h-9 gap-2 px-4 text-body-sm',
+  lg: 'h-11 gap-2 px-5 text-body-md',
+  icon: 'size-9',
 };
 
 export function buttonClasses({
@@ -36,7 +39,8 @@ export function buttonClasses({
   className,
 }: { variant?: Variant; size?: Size; className?: string } = {}) {
   return cn(
-    'inline-flex shrink-0 items-center justify-center rounded-full font-semibold whitespace-nowrap transition-colors',
+    'inline-flex shrink-0 items-center justify-center rounded-lg font-medium whitespace-nowrap transition-[color,background-color,border-color,box-shadow] select-none',
+    'focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none',
     'disabled:pointer-events-none disabled:opacity-50',
     VARIANTS[variant],
     variant !== 'link' && SIZES[size],
@@ -83,7 +87,7 @@ export function ButtonLink({ variant, size, className, ...props }: ButtonLinkPro
   return <Link className={buttonClasses({ variant, size, className })} {...props} />;
 }
 
-/** Bouton rond à icône seule (en-tête, menus) : libellé obligatoire pour les lecteurs d'écran. */
+/** Bouton à icône seule (en-tête, menus) : libellé obligatoire pour les lecteurs d'écran. */
 export function IconButton({
   label,
   className,
@@ -97,7 +101,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex size-10 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-container hover:text-ink disabled:opacity-50',
+        'inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-ink-muted transition-colors hover:bg-container hover:text-ink disabled:opacity-50',
         className,
       )}
       {...props}
@@ -116,6 +120,6 @@ export function Spinner({ className }: { className?: string }) {
   );
 }
 
-/** Action en capsule des barres de posts (voter, commenter, partager, traduire). */
+/** Action discrète des barres de posts (voter, commenter, partager, traduire). */
 export const pillAction =
-  'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-body-sm font-semibold text-ink-muted transition-colors hover:bg-container hover:text-ink disabled:pointer-events-none';
+  'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-body-sm font-medium text-ink-muted transition-colors hover:bg-container hover:text-ink disabled:pointer-events-none';

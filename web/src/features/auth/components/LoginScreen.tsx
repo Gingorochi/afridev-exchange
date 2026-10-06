@@ -9,7 +9,17 @@ import { cn } from '@/shared/lib';
 import { useSession } from '@/shared/session';
 import { Button, Field, Input, Segmented } from '@/shared/ui';
 
-import { afterLogin, authApi, COUNTRIES, type OAuthProvider, oauthAvailable, pendingPhone, startOAuth } from '../api';
+import {
+  afterLogin,
+  authApi,
+  type AuthResponse,
+  completeAuth,
+  COUNTRIES,
+  type OAuthProvider,
+  oauthAvailable,
+  pendingPhone,
+  startOAuth,
+} from '../api';
 
 function GitHubIcon() {
   return (
@@ -118,7 +128,11 @@ export function LoginScreen() {
             },
           ]}
         />
-        {method === 'phone' ? <PhoneForm /> : <EmailForm onSuccess={signIn} />}
+        {method === 'phone' ? (
+          <PhoneForm />
+        ) : (
+          <EmailForm onSuccess={(response) => completeAuth(response, signIn) || router.push('/verify-2fa')} />
+        )}
       </div>
 
       <p className="text-center text-body-sm text-ink-faint">
@@ -200,7 +214,7 @@ function PhoneForm() {
   );
 }
 
-function EmailForm({ onSuccess }: { onSuccess: (tokens: { access: string; refresh: string }) => void }) {
+function EmailForm({ onSuccess }: { onSuccess: (response: AuthResponse) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [form, setForm] = useState({ identifier: '', username: '', email: '', password: '' });
   const [error, setError] = useState<string | null>(null);
@@ -217,7 +231,7 @@ function EmailForm({ onSuccess }: { onSuccess: (tokens: { access: string; refres
         mode === 'login'
           ? await authApi.login(form.identifier, form.password)
           : await authApi.register({ username: form.username, email: form.email, password: form.password });
-      onSuccess(response.tokens);
+      onSuccess(response);
     } catch (e) {
       setError(errorMessage(e));
     } finally {

@@ -1,12 +1,27 @@
 'use client';
 
-import { Save } from 'lucide-react';
+import { ArrowLeft, BookOpen, FolderGit2, Save, Sparkles, UsersRound } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { errorMessage } from '@/shared/api';
-import { PageHeader } from '@/shared/layout';
-import { Button, Card, CardSkeleton, Field, Input, Switch, TagInput, Textarea, useToast } from '@/shared/ui';
+import { PageContainer, PageHeader } from '@/shared/layout';
+import {
+  Button,
+  CardSkeleton,
+  Field,
+  FormCard,
+  FormError,
+  FormFooter,
+  FormSection,
+  Input,
+  TagInput,
+  Textarea,
+  TipCard,
+  ToggleRow,
+  useToast,
+} from '@/shared/ui';
 
 import { type ProjectInput, useProject, useSaveProject } from '../api';
 
@@ -49,38 +64,91 @@ function ProjectForm({ id, initial }: { id?: string; initial: ProjectInput }) {
   }
 
   return (
-    <>
-      <PageHeader title={id ? 'Modifier le projet' : 'Proposer un projet open source'} description="Les good first issues de votre dépôt GitHub sont importées automatiquement." />
-      <Card className="mx-auto max-w-3xl p-4 sm:p-6">
-        <form onSubmit={submit} className="space-y-5">
-          <Field label="Nom du projet" required htmlFor="project-name">
-            <Input id="project-name" required maxLength={100} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
-          </Field>
-          <Field label="Dépôt GitHub" htmlFor="project-repo" hint="https://github.com/organisation/depot">
-            <Input id="project-repo" type="url" inputMode="url" placeholder="https://github.com/…" value={form.repo_url} onChange={(event) => setForm({ ...form, repo_url: event.target.value })} />
-          </Field>
-          <Field label="Description" htmlFor="project-description">
-            <Textarea id="project-description" maxLength={3000} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} />
-          </Field>
-          <Field label="Technologies" htmlFor="project-tags" hint="Utilisées pour recommander le projet aux bons développeurs.">
-            <TagInput id="project-tags" max={12} value={form.tags} onChange={(tags) => setForm({ ...form, tags })} suggestions={['python', 'django', 'react', 'flutter', 'go']} />
-          </Field>
-          <div className="flex items-center justify-between gap-4 rounded-lg border border-line bg-container-low p-3">
-            <div>
-              <p className="font-semibold text-ink">Je cherche des contributeurs</p>
-              <p className="text-body-sm text-ink-muted">Le projet apparaît dans les recommandations des développeurs.</p>
-            </div>
-            <Switch checked={form.is_recruiting} onChange={(is_recruiting) => setForm({ ...form, is_recruiting })} label="Je cherche des contributeurs" />
-          </div>
-          {save.isError ? <p role="alert" className="text-body-sm text-danger">{errorMessage(save.error)}</p> : null}
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => router.back()}>Annuler</Button>
+    <PageContainer>
+      <PageHeader
+        icon={<FolderGit2 aria-hidden />}
+        eyebrow={
+          <Link href="/projects" className="inline-flex items-center gap-1 hover:underline">
+            <ArrowLeft className="size-3.5" aria-hidden /> Projets
+          </Link>
+        }
+        title={id ? 'Modifier le projet' : 'Proposer un projet open source'}
+        description="Les good first issues de votre dépôt GitHub sont importées automatiquement."
+      />
+      <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <FormCard>
+          <FormSection title="Le projet">
+            <Field label="Nom du projet" required htmlFor="project-name" counter={`${form.name.length} / 100`}>
+              <Input
+                id="project-name"
+                required
+                maxLength={100}
+                placeholder="Ex. pay-africa-sdk"
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+              />
+            </Field>
+            <Field label="Dépôt GitHub" htmlFor="project-repo" hint="https://github.com/organisation/depot">
+              <Input
+                id="project-repo"
+                type="url"
+                inputMode="url"
+                placeholder="https://github.com/…"
+                value={form.repo_url}
+                onChange={(event) => setForm({ ...form, repo_url: event.target.value })}
+              />
+            </Field>
+            <Field label="Description" htmlFor="project-description" counter={`${form.description.length} / 3000`}>
+              <Textarea
+                id="project-description"
+                maxLength={3000}
+                placeholder="Le problème résolu, pour qui, et où vous en êtes."
+                value={form.description}
+                onChange={(event) => setForm({ ...form, description: event.target.value })}
+              />
+            </Field>
+          </FormSection>
+
+          <FormSection title="Contributeurs" description="Aidez les bons développeurs à trouver votre projet.">
+            <Field label="Technologies" htmlFor="project-tags" hint="Utilisées pour recommander le projet (jusqu'à 12).">
+              <TagInput
+                id="project-tags"
+                max={12}
+                value={form.tags}
+                onChange={(tags) => setForm({ ...form, tags })}
+                suggestions={['python', 'django', 'react', 'flutter', 'go']}
+              />
+            </Field>
+            <ToggleRow
+              icon={<UsersRound aria-hidden />}
+              title="Je cherche des contributeurs"
+              description="Le projet apparaît dans les recommandations des développeurs qui ont cette stack."
+              checked={form.is_recruiting}
+              onChange={(is_recruiting) => setForm({ ...form, is_recruiting })}
+            />
+            {save.isError ? <FormError>{errorMessage(save.error)}</FormError> : null}
+          </FormSection>
+
+          <FormFooter>
+            <Button variant="ghost" onClick={() => router.back()}>
+              Annuler
+            </Button>
             <Button type="submit" loading={save.isPending}>
               <Save className="size-4" aria-hidden /> {id ? 'Enregistrer' : 'Publier le projet'}
             </Button>
-          </div>
-        </form>
-      </Card>
-    </>
+          </FormFooter>
+        </FormCard>
+
+        <aside className="space-y-4">
+          <TipCard tone="primary" icon={<Sparkles aria-hidden />} title="Un projet qui attire">
+            <p>Une description qui dit quel problème vous résolvez, et pour qui.</p>
+            <p>Des issues étiquetées « good first issue » sur GitHub : elles sont importées et mises en avant.</p>
+          </TipCard>
+          <TipCard icon={<BookOpen aria-hidden />} title="Guide de démarrage IA">
+            <p>Depuis la page du projet, l&apos;IA rédige à la demande un guide de prise en main du dépôt pour les nouveaux contributeurs.</p>
+          </TipCard>
+        </aside>
+      </form>
+    </PageContainer>
   );
 }

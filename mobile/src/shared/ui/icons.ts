@@ -1,5 +1,7 @@
 import {
   Activity,
+  Award,
+  BadgeCheck,
   ArrowBigUp,
   ArrowDown,
   ArrowLeft,
@@ -46,6 +48,7 @@ import {
   House,
   Image,
   Inbox,
+  KeyRound,
   Languages,
   Lightbulb,
   Link,
@@ -109,6 +112,8 @@ import {
  */
 export const LUCIDE: Record<string, LucideIcon> = {
   activity: Activity,
+  award: Award,
+  'badge-check': BadgeCheck,
   'alert-triangle': TriangleAlert,
   'arrow-big-up': ArrowBigUp,
   'arrow-down': ArrowDown,
@@ -156,6 +161,7 @@ export const LUCIDE: Record<string, LucideIcon> = {
   home: House,
   image: Image,
   inbox: Inbox,
+  key: KeyRound,
   languages: Languages,
   lightbulb: Lightbulb,
   link: Link,

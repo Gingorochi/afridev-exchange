@@ -9,7 +9,7 @@ config/        configuration du projet, aucune logique métier
 core/          socle commun (BaseModel, pagination, erreurs, quotas, jobs IA, auth WebSocket)
 integrations/  un client par fournisseur (llm=Groq, embeddings, github, sms, push, search, storage,
                transcription) — n'importe jamais features/
-features/      un dossier par fonctionnalité métier (5 modules)
+features/      un dossier par fonctionnalité métier
 tests/         tests d'intégration bout en bout (WebSocket, ASGI complet)
 ```
 
@@ -51,7 +51,15 @@ features/<nom>/
 | 3. Entraide et snippets | `qa`, `snippets`, `knowledge` | réponse RAG, reformulation, questions vocales ; Security Guard 2 étages ; index pgvector + Meilisearch |
 | 4. Open source | `projects`, `matchmaking`, `onboarding_agent` | good first issues GitHub ; recommandations et candidatures ; guide de démarrage d'un dépôt |
 | 5. Low-data / hors ligne | `sync`, `media` | jetons PowerSync + JWKS, file d'écritures hors ligne ; HLS 240p-720p, WebP/AVIF + ThumbHash, Opus |
-| Transverse | `notifications`, `moderation` | in-app + WebSocket + push Expo + e-mail ; signalements et modération IA |
+| 6. Communauté pro | `hubs`, `bookmarks`, `jobs_events` | hubs h/<slug> (adhésions, règles, fil) ; collections de marque-pages ; Job Board et événements tech |
+| Transverse | `notifications`, `moderation` | in-app + WebSocket + push Expo + e-mail (types coupables) ; signalements et modération IA |
+
+Réputation (`profiles/reputation.py`) : karma (+5 par vote ↑ reçu, +15 par réponse acceptée, +10 par
+snippet enregistré par un autre membre) et badges automatiques, recalculés à chaque événement ;
+`python manage.py recompute_karma` rafraîchit tout le monde (classement « Top 5 % »).
+Sécurité du compte (`accounts/security.py`) : sessions révocables (claim `sid` des JWT), double
+authentification TOTP, jetons d'accès personnels `afd_…` (`Authorization: Bearer`), export RGPD
+(`GET /api/accounts/me/export/`).
 
 Documentation interactive de l'API : `/api/docs/` (schéma : `/api/schema/`).
 Temps réel : `ws://<hôte>/ws/discussions/<post_id>/?token=<jwt>` et `ws://<hôte>/ws/notifications/?token=<jwt>`.

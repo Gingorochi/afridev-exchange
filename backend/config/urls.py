@@ -7,6 +7,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from core.views import HealthView, JobStatusView
+from features.feed.api.views import HubFeedView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -17,6 +18,11 @@ urlpatterns = [
     path("api/accounts/", include("features.accounts.api.urls")),
     path("api/profiles/", include("features.profiles.api.urls")),
     path("api/feed/", include("features.feed.api.urls")),
+    # Le fil d'un hub appartient au fil (features.feed) ; le reste de /api/hubs/ à features.hubs.
+    path("api/hubs/<slug:slug>/feed/", HubFeedView.as_view(), name="hub-feed"),
+    path("api/hubs/", include("features.hubs.api.urls")),
+    path("api/bookmarks/", include("features.bookmarks.api.urls")),
+    path("api/", include("features.jobs_events.api.urls")),  # /api/job-board/ et /api/events/
     path("api/discussions/", include("features.discussions.api.urls")),
     path("api/translation/", include("features.translation.api.urls")),
     path("api/qa/", include("features.qa.api.urls")),

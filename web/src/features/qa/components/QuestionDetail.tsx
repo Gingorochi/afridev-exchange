@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { BookmarkButton } from '@/features/bookmarks';
 import { ReportButton } from '@/features/moderation';
 import { TranslateButton } from '@/features/translation';
 import { errorMessage } from '@/shared/api';
@@ -16,6 +17,7 @@ import { useOutbox } from '@/shared/offline';
 import { SecretAlert, useSecretScan } from '@/shared/security-guard';
 import { useSession } from '@/shared/session';
 import {
+  AuthorBadges,
   Avatar,
   Button,
   ButtonLink,
@@ -23,9 +25,11 @@ import {
   CardSkeleton,
   CommunityIcon,
   ErrorNotice,
+  HubLink,
   Markdown,
   MarkdownEditor,
   pillAction,
+  Reputation,
   Segmented,
   Skeleton,
   StatusBadge,
@@ -51,9 +55,9 @@ export function QuestionDetail({ id, initial, aside }: { id: string; initial?: Q
     <TwoColumns aside={aside}>
       <Link
         href="/questions"
-        className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full bg-card px-3 text-body-sm font-semibold text-ink-muted shadow-card ring-1 ring-line hover:text-ink"
+        className="inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-line bg-card px-3 text-body-sm font-medium text-ink-muted shadow-card hover:text-ink"
       >
-        <ArrowLeft className="size-4" aria-hidden /> Entraide
+        <ArrowLeft className="size-4" aria-hidden /> Q&amp;A
       </Link>
       {question.data ? (
         <QuestionView question={question.data} />
@@ -76,11 +80,11 @@ function QuestionView({ question }: { question: Question }) {
 
   return (
     <>
-      <article className="rounded-xl border border-line bg-card px-4 pt-4 pb-2.5 shadow-card sm:px-6">
+      <article className="rounded-2xl border border-line bg-card px-4 pt-4 pb-2.5 shadow-card sm:px-6">
         <div className="flex flex-wrap items-center gap-2 text-body-sm">
           {community ? (
             <Link href={`/questions?tag=${encodeURIComponent(community)}`} className="flex items-center gap-1.5 font-bold text-ink hover:underline">
-              <CommunityIcon tag={community} size={22} /> d/{community}
+              <CommunityIcon tag={community} size={20} /> d/{community}
             </Link>
           ) : null}
           {community ? <span className="text-ink-faint" aria-hidden>•</span> : null}
@@ -94,13 +98,25 @@ function QuestionView({ question }: { question: Question }) {
               name
             )}
           </span>
+          <AuthorBadges location={question.author?.location} stack={question.author?.stack} />
+          <Reputation karma={question.author?.karma} badges={question.author?.badges} />
+          {question.hub ? (
+            <>
+              <span className="text-ink-faint" aria-hidden>•</span>
+              <HubLink hub={question.hub} />
+            </>
+          ) : null}
           <span className="text-ink-faint" aria-hidden>•</span>
           <TimeAgo date={question.created_at} className="text-ink-faint" />
-          {question.is_resolved ? (
-            <StatusBadge tone="success" className="ml-auto">
-              Résolue
-            </StatusBadge>
-          ) : null}
+          <span className="ml-auto">
+            {question.is_resolved ? (
+              <StatusBadge tone="success" dot={false}>
+                <CheckCircle2 className="size-3.5" aria-hidden /> Résolu
+              </StatusBadge>
+            ) : (
+              <StatusBadge tone="warning">En attente</StatusBadge>
+            )}
+          </span>
         </div>
         <h1 className="mt-2 text-headline-xl text-ink">{question.title}</h1>
         <div className="mt-3 text-body-lg">
@@ -119,6 +135,7 @@ function QuestionView({ question }: { question: Question }) {
           <span className={cn(pillAction, 'hover:bg-transparent')}>
             {question.answer_count} réponse{question.answer_count > 1 ? 's' : ''}
           </span>
+          <BookmarkButton target={{ type: 'question', id: question.id }} title={question.title} />
           <TranslateButton text={`${question.title}\n\n${question.body}`} />
           <span className="ml-auto">
             {mine ? (
@@ -159,7 +176,7 @@ function AiAnswer({ question, mine }: { question: Question; mine: boolean }) {
   const sources = question.ai_answer_sources;
 
   return (
-    <section aria-labelledby="ai-answer" className="overflow-hidden rounded-xl border border-primary/25 bg-card shadow-card">
+    <section aria-labelledby="ai-answer" className="overflow-hidden rounded-2xl border border-primary/25 bg-card shadow-card">
       <header className="flex flex-wrap items-center justify-between gap-2 bg-primary-soft/50 px-4 py-3 sm:px-6">
         <h2 id="ai-answer" className="flex items-center gap-2.5 text-headline-md text-ink">
           <span className="flex size-8 items-center justify-center rounded-full bg-primary text-on-primary">
@@ -259,70 +276,79 @@ function AnswerCard({ answer, questionId, canAccept }: { answer: Answer; questio
   return (
     <article
       className={cn(
-        'flex gap-3 rounded-xl border bg-card p-4 shadow-card sm:gap-4 sm:px-5',
-        answer.is_accepted ? 'border-secondary ring-1 ring-secondary/30' : 'border-line',
+        'overflow-hidden rounded-2xl border bg-card shadow-card',
+        answer.is_accepted ? 'border-secondary/60 ring-3 ring-secondary/10' : 'border-line',
       )}
     >
-      <div className="flex shrink-0 flex-col items-center rounded-full bg-container p-0.5">
-        <button
-          type="button"
-          aria-label="Voter pour"
-          disabled={!canVote}
-          onClick={() => vote.mutate({ answerId: answer.id, value: 1 })}
-          className="flex size-8 items-center justify-center rounded-full text-ink-muted hover:bg-primary-soft hover:text-primary disabled:opacity-40 disabled:hover:bg-transparent"
-        >
-          <ArrowBigUp className="size-5" aria-hidden />
-        </button>
-        <span className="py-0.5 text-body-sm font-bold text-ink tabular-nums">{answer.score}</span>
-        <button
-          type="button"
-          aria-label="Voter contre"
-          disabled={!canVote}
-          onClick={() => vote.mutate({ answerId: answer.id, value: -1 })}
-          className="flex size-8 items-center justify-center rounded-full text-ink-muted hover:bg-[#e8e4ff] hover:text-[#5b4bd6] disabled:opacity-40 disabled:hover:bg-transparent"
-        >
-          <ArrowBigDown className="size-5" aria-hidden />
-        </button>
-      </div>
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="flex flex-wrap items-center gap-2 text-body-sm">
-          <Avatar name={name} src={answer.author?.avatar_url} size={24} />
-          {answer.author ? (
-            <Link href={`/u/${answer.author.username}`} className="font-bold text-ink hover:underline">
-              {name}
-            </Link>
-          ) : (
-            <span className="font-bold">{name}</span>
+      {answer.is_accepted ? (
+        <p className="flex items-center gap-2 border-b border-secondary/25 bg-secondary-soft px-4 py-2 text-body-sm font-medium text-on-secondary-soft sm:px-5">
+          <CheckCircle2 className="size-4" aria-hidden /> Solution acceptée par l&apos;auteur de la question
+        </p>
+      ) : null}
+      <div className="flex gap-3 p-4 sm:gap-4 sm:px-5">
+        <div
+          className={cn(
+            'flex shrink-0 flex-col items-center self-start rounded-lg border p-0.5',
+            answer.is_accepted ? 'border-secondary/30 bg-secondary-soft/60' : 'border-line bg-container-low',
           )}
-          <span className="text-ink-faint" aria-hidden>•</span>
-          <TimeAgo date={answer.created_at} className="text-ink-faint" />
-          {answer.is_accepted ? (
-            <StatusBadge tone="success" dot={false} className="ml-auto">
-              <CheckCircle2 className="size-3.5" aria-hidden /> Solution acceptée
-            </StatusBadge>
-          ) : null}
+        >
+          <button
+            type="button"
+            aria-label="Voter pour"
+            disabled={!canVote}
+            onClick={() => vote.mutate({ answerId: answer.id, value: 1 })}
+            className="flex size-8 items-center justify-center rounded-md text-ink-muted hover:bg-primary-soft hover:text-primary disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            <ArrowBigUp className="size-5" aria-hidden />
+          </button>
+          <span className="py-0.5 text-body-sm font-semibold text-ink tabular-nums">{answer.score}</span>
+          <button
+            type="button"
+            aria-label="Voter contre"
+            disabled={!canVote}
+            onClick={() => vote.mutate({ answerId: answer.id, value: -1 })}
+            className="flex size-8 items-center justify-center rounded-md text-ink-muted hover:bg-downvote-soft hover:text-downvote disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            <ArrowBigDown className="size-5" aria-hidden />
+          </button>
         </div>
-        <Markdown source={answer.body} />
-        <div className="-ml-2 flex flex-wrap items-center gap-1">
-          {canAccept && !answer.is_accepted ? (
-            <Button variant="secondary" size="sm" onClick={() => accept.mutate(answer.id)} loading={accept.isPending}>
-              <CheckCircle2 className="size-4" aria-hidden /> Accepter comme solution
-            </Button>
-          ) : null}
-          <TranslateButton text={answer.body} />
-          <span className="ml-auto">
-            {mine ? (
-              <button
-                type="button"
-                onClick={() => window.confirm('Supprimer votre réponse ?') && remove.mutate(answer.id)}
-                className={cn(pillAction, 'hover:text-danger')}
-              >
-                <Trash2 className="size-4" aria-hidden /> Supprimer
-              </button>
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-2 text-body-sm">
+            <Avatar name={name} src={answer.author?.avatar_url} size={24} />
+            {answer.author ? (
+              <Link href={`/u/${answer.author.username}`} className="font-semibold text-ink hover:underline">
+                {name}
+              </Link>
             ) : (
-              <ReportButton targetType="answer" targetId={answer.id} compact />
+              <span className="font-semibold">{name}</span>
             )}
-          </span>
+            <span className="text-ink-faint" aria-hidden>•</span>
+            <TimeAgo date={answer.created_at} className="text-ink-faint" />
+            <AuthorBadges location={answer.author?.location} stack={answer.author?.stack} />
+          <Reputation karma={answer.author?.karma} badges={answer.author?.badges} />
+          </div>
+          <Markdown source={answer.body} />
+          <div className="-ml-2 flex flex-wrap items-center gap-1">
+            {canAccept && !answer.is_accepted ? (
+              <Button variant="secondary" size="sm" onClick={() => accept.mutate(answer.id)} loading={accept.isPending}>
+                <CheckCircle2 className="size-4" aria-hidden /> Accepter comme solution
+              </Button>
+            ) : null}
+            <TranslateButton text={answer.body} />
+            <span className="ml-auto">
+              {mine ? (
+                <button
+                  type="button"
+                  onClick={() => window.confirm('Supprimer votre réponse ?') && remove.mutate(answer.id)}
+                  className={cn(pillAction, 'hover:text-danger')}
+                >
+                  <Trash2 className="size-4" aria-hidden /> Supprimer
+                </button>
+              ) : (
+                <ReportButton targetType="answer" targetId={answer.id} compact />
+              )}
+            </span>
+          </div>
         </div>
       </div>
     </article>

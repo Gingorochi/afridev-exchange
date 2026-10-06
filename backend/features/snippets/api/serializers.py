@@ -1,6 +1,11 @@
 from rest_framework import serializers
 
-from core.serializers import AuthorSerializer, ReadOnlyModelSerializer, string_list
+from core.serializers import (
+    AuthorSerializer,
+    HubSummarySerializer,
+    ReadOnlyModelSerializer,
+    string_list,
+)
 
 from ..models import Snippet, SnippetVersion
 
@@ -12,6 +17,7 @@ class SnippetInputSerializer(serializers.Serializer):
     content = serializers.CharField(max_length=50000, trim_whitespace=False)
     tags = serializers.ListField(child=serializers.CharField(max_length=30), required=False)
     is_public = serializers.BooleanField(required=False, default=False)
+    hub_id = serializers.UUIDField(required=False, allow_null=True, help_text="Hub facultatif.")
 
 
 class SnippetUpdateSerializer(serializers.Serializer):
@@ -19,6 +25,7 @@ class SnippetUpdateSerializer(serializers.Serializer):
     language = serializers.CharField(max_length=40, required=False)
     content = serializers.CharField(max_length=50000, trim_whitespace=False, required=False)
     tags = serializers.ListField(child=serializers.CharField(max_length=30), required=False)
+    hub_id = serializers.UUIDField(required=False, allow_null=True)
 
 
 class SnippetOutputSerializer(ReadOnlyModelSerializer):
@@ -33,6 +40,7 @@ class SnippetOutputSerializer(ReadOnlyModelSerializer):
             "content",
             "tags",
             "is_public",
+            "hub_id",
             "published_at",
             "ai_review",
             "created_at",
@@ -48,6 +56,7 @@ class PublicSnippetSerializer(serializers.Serializer):
     language = serializers.CharField()
     content = serializers.CharField()
     tags = serializers.ListField(child=serializers.CharField())
+    hub = HubSummarySerializer(allow_null=True)
     published_at = serializers.DateTimeField()
     author = AuthorSerializer(allow_null=True)
 

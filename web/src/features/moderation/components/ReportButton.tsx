@@ -54,7 +54,7 @@ export function ReportButton({
         onClick={() => setOpen(true)}
         aria-label="Signaler"
         title="Signaler"
-        className={compact ? `${pillAction} px-2` : pillAction}
+        className={compact ? `${pillAction} px-1.5 sm:px-2` : pillAction}
       >
         <Flag className="size-4" aria-hidden /> {compact ? null : 'Signaler'}
       </button>

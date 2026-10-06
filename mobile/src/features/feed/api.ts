@@ -12,6 +12,8 @@ export interface FeedFilters {
   kind?: PostKind;
   author?: string;
   tag?: string;
+  /** Slug ou UUID du hub. */
+  hub?: string;
 }
 
 export const feedKeys = {
@@ -125,6 +127,14 @@ export function useCommunities(limit = 12) {
   return useQuery({
     queryKey: ['feed', 'communities', limit],
     queryFn: () => unwrap(api.GET('/api/feed/communities/', { params: { query: { limit } } })),
+    staleTime: 10 * 60_000,
+  });
+}
+/** Hubs les plus suivis (bande du fil) ; la gestion des hubs vit dans features/hubs. */
+export function usePopularHubs() {
+  return useQuery({
+    queryKey: ['hubs', 'popular-strip'],
+    queryFn: () => unwrap(api.GET('/api/hubs/', { params: { query: { sort: 'popular', page_size: 10 } } })),
     staleTime: 10 * 60_000,
   });
 }

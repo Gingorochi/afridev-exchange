@@ -12,6 +12,7 @@ from core.permissions import ReadOnlyOrAuthenticated
 from core.schema import CURSOR_PARAMETERS, paginated
 from core.serializers import AcceptedJobSerializer
 from core.throttling import AIQuotaThrottle
+from features.hubs import selectors as hub_selectors
 from features.knowledge import selectors as knowledge_selectors
 
 from .. import selectors, services
@@ -54,6 +55,7 @@ class QuestionListCreateView(APIView):
             OpenApiParameter("author", str, required=False),
             OpenApiParameter("resolved", bool, required=False),
             OpenApiParameter("q", str, required=False),
+            OpenApiParameter("hub", str, required=False, description="Slug ou UUID du hub"),
         ],
         responses=paginated(QuestionOutputSerializer),
         operation_id="qa_questions_list",
@@ -61,12 +63,17 @@ class QuestionListCreateView(APIView):
     def get(self, request):
         params = request.query_params
         resolved = params.get("resolved")
+        hub = params.get("hub")
+        hub_id = hub_selectors.resolve_hub_id(value=hub) if hub else None
         questions = selectors.list_questions(
             tag=params.get("tag"),
             author_id=params.get("author"),
             resolved=None if resolved is None else resolved.lower() in ("1", "true"),
             query=params.get("q"),
+            hub_id=hub_id,
         )
+        if hub and hub_id is None:
+            questions = questions.none()
         paginator = CursorPagination()
         page = paginator.paginate_queryset(questions, request)
         return paginator.get_paginated_response(present_questions(page))

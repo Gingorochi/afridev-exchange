@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 import { cn } from '@/shared/lib';
-import { Menu, MenuItem } from '@/shared/ui';
+import { Kbd, Menu, MenuItem } from '@/shared/ui';
 
 import { PUBLISH_ITEMS } from './nav';
 
@@ -40,13 +40,20 @@ export function PublishMenu({ compact = false, className }: { compact?: boolean;
           className={cn(
             'inline-flex items-center justify-center gap-1.5 font-semibold transition-colors',
             compact
-              ? 'size-12 rounded-full bg-primary text-on-primary shadow-raised hover:bg-primary-hover'
-              : 'h-10 rounded-full px-3.5 text-ink hover:bg-container',
+              ? 'size-11 rounded-xl bg-primary text-on-primary shadow-raised hover:bg-primary-hover active:scale-95'
+              : 'h-9 rounded-lg bg-primary pr-2 pl-3 text-body-sm text-on-primary shadow-[0_1px_2px_rgba(10,10,11,0.12),inset_0_1px_0_rgba(255,255,255,0.18)] hover:bg-primary-hover',
             className,
           )}
         >
-          <Plus className={compact ? 'size-6' : 'size-5'} aria-hidden />
-          {compact ? <span className="sr-only">Créer</span> : <span className="hidden sm:inline">Créer</span>}
+          <Plus className={compact ? 'size-6' : 'size-4'} aria-hidden />
+          {compact ? (
+            <span className="sr-only">Créer</span>
+          ) : (
+            <>
+              <span className="hidden sm:inline">Créer</span>
+              <Kbd className="ml-1 hidden border-white/25 bg-white/15 text-on-primary lg:inline-flex">N</Kbd>
+            </>
+          )}
         </button>
       )}
     >
@@ -54,11 +61,11 @@ export function PublishMenu({ compact = false, className }: { compact?: boolean;
         const Icon = ICONS[index] ?? PenSquare;
         return (
           <MenuItem key={item.href} href={item.href}>
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft">
-              <Icon className="!text-primary-ink" aria-hidden />
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-container-low">
+              <Icon className="!text-ink-muted" aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className="block font-semibold">{item.label}</span>
+              <span className="block font-medium">{item.label}</span>
               <span className="block text-body-sm text-ink-muted">{item.hint}</span>
             </span>
           </MenuItem>

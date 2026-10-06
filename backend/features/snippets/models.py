@@ -14,6 +14,8 @@ class Snippet(BaseModel):
     # Liste JSON : même forme que la colonne `tags` de la copie locale (PowerSync).
     tags = models.JSONField(default=list, blank=True)
     is_public = models.BooleanField(default=False)
+    # Hub où le snippet est partagé une fois public (features.hubs), facultatif.
+    hub_id = models.UUIDField(null=True, blank=True, db_index=True)
     published_at = models.DateTimeField(null=True, blank=True)
     # Étage 2 du Security Guard : {"risky": bool, "reasons": [...], "checked_at": iso}
     ai_review = models.JSONField(default=dict, blank=True)

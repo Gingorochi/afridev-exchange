@@ -18,6 +18,7 @@ import {
   EmptyState,
   ErrorNotice,
   FilterChips,
+  HubIcon,
   Icon,
   type IconName,
   LogoMark,
@@ -26,7 +27,7 @@ import {
   Text,
 } from '@/shared/ui';
 
-import { type PostKind, useCommunities, useFeed } from '../api';
+import { type PostKind, useCommunities, useFeed, usePopularHubs } from '../api';
 import { PostCard } from '../components/PostCard';
 
 type KindFilter = 'all' | PostKind;
@@ -166,26 +167,31 @@ function ComposerBar({ community }: { community?: string }) {
   );
 }
 
-/** Communautés actives en bande horizontale (accès en un toucher au fil filtré). */
+/** Hubs populaires en bande horizontale (un toucher : la page du hub ; « Tous » : l'exploration). */
 function CommunityStrip() {
   const { colors } = useTheme();
-  const communities = useCommunities(10);
-  if (!communities.data?.length) return null;
+  const hubs = usePopularHubs();
+  if (!hubs.data?.results.length) return null;
   return (
     <View style={[styles.block, cardShadow, { backgroundColor: colors.card, borderColor: colors.border, paddingHorizontal: 0, gap: 10 }]}>
-      <Text variant="label" style={{ paddingHorizontal: space.md }}>
-        Communautés populaires
-      </Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: space.md }}>
+        <Text variant="label">Hubs populaires</Text>
+        <Pressable onPress={() => router.push('/hubs')} hitSlop={8} accessibilityRole="link">
+          <Text variant="label" tone="primary">
+            Tous les hubs
+          </Text>
+        </Pressable>
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: space.md }}>
-        {communities.data.map((community) => (
+        {hubs.data.results.map((hub) => (
           <Pressable
-            key={community.tag}
-            onPress={() => router.push({ pathname: '/feed', params: { tag: community.tag } })}
+            key={hub.id}
+            onPress={() => router.push(`/h/${hub.slug}`)}
             accessibilityRole="link"
             style={({ pressed }) => [styles.communityChip, { backgroundColor: pressed ? colors.containerHigh : colors.container }]}
           >
-            <CommunityIcon tag={community.tag} size={24} />
-            <Text variant="label">d/{community.tag}</Text>
+            <HubIcon icon={hub.icon} name={hub.name} size={24} />
+            <Text variant="label">h/{hub.slug}</Text>
           </Pressable>
         ))}
       </ScrollView>

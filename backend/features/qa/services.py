@@ -6,10 +6,17 @@ from django.db.models import F, Sum
 from core import jobs
 from core.exceptions import DomainError, NotFoundError, PermissionDeniedError
 from core.utils import normalize_tags
+from features.hubs import services as hub_services
 from features.media import selectors as media_selectors
 from features.snippets import selectors as snippet_selectors
 
-from .events import ai_answer_ready, answer_accepted, answer_created, question_created
+from .events import (
+    ai_answer_ready,
+    answer_accepted,
+    answer_created,
+    answer_voted,
+    question_created,
+)
 from .models import Answer, AnswerVote, Question
 
 
@@ -40,6 +47,7 @@ def create_question(
     body: str,
     tags: list | None = None,
     audio_media_id=None,
+    hub_id=None,
     question_id=None,
 ) -> Question:
     """`question_id` : identifiant généré hors ligne (rejouer l'envoi est sans effet)."""
@@ -65,6 +73,7 @@ def create_question(
         body=body,
         tags=normalize_tags(tags),
         audio_media_id=audio_media_id or None,
+        hub_id=hub_services.require_hub(hub_id=hub_id),
     )
     if question_id:
         question.id = question_id
@@ -245,9 +254,9 @@ def accept_answer(*, answer: Answer, user) -> Answer:
     question = answer.question
     if question.author_id != user.id:
         raise PermissionDeniedError("Seul l'auteur de la question peut accepter une réponse.")
-    Answer.objects.filter(question=question, is_accepted=True).exclude(id=answer.id).update(
-        is_accepted=False
-    )
+    previous = Answer.objects.filter(question=question, is_accepted=True).exclude(id=answer.id)
+    previous_author_ids = list(previous.values_list("author_id", flat=True))
+    previous.update(is_accepted=False)
     answer.is_accepted = True
     answer.save(update_fields=["is_accepted", "updated_at"])
     question.is_resolved = True
@@ -258,6 +267,7 @@ def accept_answer(*, answer: Answer, user) -> Answer:
             question_id=question.id,
             answer_id=answer.id,
             answer_author_id=answer.author_id,
+            previous_author_ids=previous_author_ids,
         )
     )
     return answer
@@ -276,6 +286,9 @@ def vote_answer(*, answer: Answer, user, value: int) -> Answer:
         )
     answer.score = AnswerVote.objects.filter(answer=answer).aggregate(s=Sum("value"))["s"] or 0
     answer.save(update_fields=["score", "updated_at"])
+    transaction.on_commit(
+        lambda: answer_voted.send(sender=Answer, answer_id=answer.id, author_id=answer.author_id)
+    )
     return answer
 
 
@@ -310,6 +323,7 @@ def apply_offline_question(*, user, op: str, record_id, data: dict) -> None:
             title=data.get("title") or "",
             body=data.get("body") or "",
             tags=data.get("tags"),
+            hub_id=data.get("hub_id") or None,
         )
         return
     question = Question.objects.alive().filter(id=record_id).first()

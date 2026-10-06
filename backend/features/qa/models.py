@@ -19,6 +19,8 @@ class Question(BaseModel):
     tags = models.JSONField(default=list, blank=True)
     # Question posée à la voix : message vocal d'origine (features.media).
     audio_media_id = models.UUIDField(null=True, blank=True)
+    # Hub de rattachement (features.hubs), facultatif.
+    hub_id = models.UUIDField(null=True, blank=True, db_index=True)
 
     ai_answer = models.TextField(blank=True)
     ai_answer_status = models.CharField(

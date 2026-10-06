@@ -1,10 +1,10 @@
 'use client';
 
 import type { Schemas } from '@afridev/api-client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type InfiniteData, type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api, unwrap } from '@/shared/api';
-import { useInfiniteList } from '@/shared/query';
+import { type Page, useInfiniteList } from '@/shared/query';
 import { useSession } from '@/shared/session';
 
 export type Notification = Schemas['Notification'];
@@ -36,21 +36,91 @@ export function useNotifications(unreadOnly: boolean) {
   );
 }
 
-export function useMarkRead() {
+/**
+ * Applique tout de suite un changement aux listes en cache (toutes / non lues) et au compteur :
+ * le panneau réagit sans attendre le serveur, puis on resynchronise.
+ */
+function patchCache(
+  queryClient: QueryClient,
+  update: (items: Notification[]) => Notification[],
+  unreadDelta: (unread: number) => number,
+) {
+  queryClient.setQueriesData<InfiniteData<Page<Notification>>>({ queryKey: ['notifications', 'list'] }, (data) =>
+    data ? { ...data, pages: data.pages.map((page) => ({ ...page, results: update(page.results) })) } : data,
+  );
+  queryClient.setQueryData<{ unread: number }>(notificationKeys.unread, (data) =>
+    data ? { unread: Math.max(0, unreadDelta(data.unread)) } : data,
+  );
+}
+
+function useOptimistic<V>(
+  mutationFn: (variables: V) => Promise<unknown>,
+  apply: (queryClient: QueryClient, variables: V) => void,
+) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      unwrap(api.POST('/api/notifications/{notification_id}/read/', { params: { path: { notification_id: id } } })),
+    mutationFn,
+    onMutate: async (variables: V) => {
+      await queryClient.cancelQueries({ queryKey: notificationKeys.all });
+      apply(queryClient, variables);
+    },
     onSettled: () => queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
   });
 }
 
+const now = () => new Date().toISOString();
+
+export function useMarkRead() {
+  return useOptimistic(
+    (notification: Notification) =>
+      unwrap(
+        api.POST('/api/notifications/{notification_id}/read/', {
+          params: { path: { notification_id: notification.id } },
+        }),
+      ),
+    (queryClient, target) =>
+      patchCache(
+        queryClient,
+        (items) => items.map((item) => (item.id === target.id ? { ...item, read_at: item.read_at ?? now() } : item)),
+        (unread) => (target.read_at ? unread : unread - 1),
+      ),
+  );
+}
+
 export function useMarkAllRead() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () => unwrap(api.POST('/api/notifications/read-all/')),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
-  });
+  return useOptimistic(
+    () => unwrap(api.POST('/api/notifications/read-all/')),
+    (queryClient) =>
+      patchCache(
+        queryClient,
+        (items) => items.map((item) => ({ ...item, read_at: item.read_at ?? now() })),
+        () => 0,
+      ),
+  );
+}
+
+export function useDeleteNotification() {
+  return useOptimistic(
+    (notification: Notification) =>
+      unwrap(
+        api.DELETE('/api/notifications/{notification_id}/', {
+          params: { path: { notification_id: notification.id } },
+        }),
+      ),
+    (queryClient, target) =>
+      patchCache(
+        queryClient,
+        (items) => items.filter((item) => item.id !== target.id),
+        (unread) => (target.read_at ? unread : unread - 1),
+      ),
+  );
+}
+
+export function useClearNotifications() {
+  return useOptimistic(
+    () => unwrap(api.DELETE('/api/notifications/')),
+    (queryClient) => patchCache(queryClient, () => [], () => 0),
+  );
 }
 
 /** Lien de l'écran concerné, d'après data = {type, id}. */

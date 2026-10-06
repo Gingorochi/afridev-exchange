@@ -47,6 +47,7 @@ function fromLocal(row: LocalSnippetRow): Snippet {
     content: row.content,
     tags,
     is_public: Boolean(row.is_public),
+    hub_id: null,
     published_at: null,
     ai_review: {},
     created_at: row.created_at,

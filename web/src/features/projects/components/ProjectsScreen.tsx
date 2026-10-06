@@ -1,11 +1,11 @@
 'use client';
 
-import { FolderGit2, Plus, Sparkles } from 'lucide-react';
+import { FolderGit2, GitPullRequest, Layers, Plus, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { useMyApplications, useRecommendedProjects } from '@/features/matchmaking';
-import { PageHeader } from '@/shared/layout';
+import { PageContainer, PageHeader, Toolbar } from '@/shared/layout';
 import { useSession } from '@/shared/session';
 import { Button, ButtonLink, Card, CardSkeleton, EmptyState, ErrorNotice, Segmented, StatusBadge, TimeAgo } from '@/shared/ui';
 
@@ -21,30 +21,29 @@ export function ProjectsScreen() {
   const applications = useMyApplications();
 
   return (
-    <>
+    <PageContainer>
       <PageHeader
-        eyebrow="Écosystème open source africain"
-        title="Projets open source d'Afrique"
-        description="Découvrez et faites grandir des bibliothèques pensées pour les contraintes du continent."
+        icon={<FolderGit2 aria-hidden />}
+        title="Projets"
+        description="Des bibliothèques open source pensées pour les contraintes du continent, qui cherchent des contributeurs."
         actions={
-          isAuthenticated ? (
-            <ButtonLink href="/projects/new" variant="ghost">
-              <Plus className="size-4" aria-hidden /> Proposer un projet
-            </ButtonLink>
-          ) : null
+          <ButtonLink href={isAuthenticated ? '/projects/new' : '/login?next=/projects/new'}>
+            <Plus className="size-4" aria-hidden /> Proposer un projet
+          </ButtonLink>
         }
       />
       {isAuthenticated ? (
-        <Segmented<Tab>
-          className="mb-4"
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: 'recommended', label: 'Recommandés pour vous', count: recommended.data?.length },
-            { value: 'all', label: 'Tous les projets' },
-            { value: 'mine', label: 'Mes contributions', count: applications.data?.length },
-          ]}
-        />
+        <Toolbar className="mb-4">
+          <Segmented<Tab>
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'recommended', label: 'Pour vous', icon: <Sparkles aria-hidden />, count: recommended.data?.length },
+              { value: 'all', label: 'Tous les projets', icon: <Layers aria-hidden /> },
+              { value: 'mine', label: 'Mes contributions', icon: <GitPullRequest aria-hidden />, count: applications.data?.length },
+            ]}
+          />
+        </Toolbar>
       ) : null}
 
       {tab === 'recommended' ? (
@@ -56,7 +55,7 @@ export function ProjectsScreen() {
             </Card>
           ) : null}
           {recommended.data?.length ? (
-            <Card className="flex flex-wrap items-center gap-3 border-primary/30 bg-primary-soft/30 p-4">
+            <Card className="flex flex-wrap items-center gap-3 border-primary/25 bg-primary-soft/40 p-4">
               <Sparkles className="size-5 text-primary-ink" aria-hidden />
               <StatusBadge tone="success">Match personnalisé</StatusBadge>
               <p className="text-body-md text-ink">
@@ -106,7 +105,7 @@ export function ProjectsScreen() {
       ) : (
         <AllProjects />
       )}
-    </>
+    </PageContainer>
   );
 }
 

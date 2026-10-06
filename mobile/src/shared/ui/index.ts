@@ -5,6 +5,7 @@ export { Markdown } from './Markdown';
 export { AppBar, LogoMark, Screen, ScreenHeader, SectionTitle, Wordmark } from './Screen';
 export { Sheet } from './Sheet';
 export { formatBytes, formatCount, NetworkPill, OfflineBanner, SecretAlert, timeAgo, utf8Size } from './Status';
+export { HubIcon, Reputation } from './Community';
 export { Avatar, Card, CardSkeleton, communityColor, CommunityIcon, DraftBadge, EmptyState, ErrorNotice, Pill, Skeleton, Tag } from './Surfaces';
 export { Icon, type IconName, Text } from './Text';
 export { ToastProvider, useToast } from './Toast';

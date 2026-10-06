@@ -27,12 +27,12 @@ export function TagInput({
 
   return (
     <div className="space-y-2">
-      <div className="flex min-h-11 flex-wrap items-center gap-2 rounded-lg border border-line bg-card px-2.5 py-2 transition-colors focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15">
+      <div className="flex min-h-10 flex-wrap items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2 py-1.5 shadow-card transition-colors focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15">
         {value.map((tag) => (
-          <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-primary-soft py-0.5 pr-1 pl-2.5 text-body-sm font-medium text-primary-ink">
+          <span key={tag} className="inline-flex items-center gap-1 rounded-md border border-line bg-container-low py-0.5 pr-1 pl-2 text-body-sm font-medium text-ink">
             <span>#</span>
             {tag}
-            <button type="button" aria-label={`Retirer ${tag}`} onClick={() => onChange(value.filter((t) => t !== tag))} className="flex size-5 items-center justify-center rounded-full hover:bg-primary/15">
+            <button type="button" aria-label={`Retirer ${tag}`} onClick={() => onChange(value.filter((t) => t !== tag))} className="flex size-5 items-center justify-center rounded hover:bg-container-high">
               <X className="size-3" aria-hidden />
             </button>
           </span>
@@ -64,7 +64,7 @@ export function TagInput({
         <div className="flex flex-wrap items-center gap-2 text-body-sm text-ink-muted">
           Suggestions :
           {remaining.map((tag) => (
-            <button key={tag} type="button" onClick={() => add(tag)} className="rounded-full bg-container px-2.5 py-0.5 text-label-md font-medium transition-colors hover:bg-primary-soft hover:text-primary-ink">
+            <button key={tag} type="button" onClick={() => add(tag)} className="rounded-md border border-line px-2 py-0.5 text-label-md font-medium transition-colors hover:bg-container hover:text-ink">
               #{tag}
             </button>
           ))}

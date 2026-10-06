@@ -8,7 +8,20 @@ import { PUBLIC_WEB_URL } from '@/shared/api';
 import { type MediaAsset, MediaView } from '@/shared/media';
 import { useSession } from '@/shared/session';
 import { cardShadow, fonts, radius, space, useTheme } from '@/shared/theme';
-import { Avatar, CommunityIcon, formatCount, Icon, Markdown, Pill, PillAction, Tag, Text, timeAgo } from '@/shared/ui';
+import {
+  Avatar,
+  CommunityIcon,
+  formatCount,
+  HubIcon,
+  Icon,
+  Markdown,
+  Pill,
+  PillAction,
+  Reputation,
+  Tag,
+  Text,
+  timeAgo,
+} from '@/shared/ui';
 
 import { type Post, useDeletePost, useLike, useVote } from '../api';
 
@@ -24,7 +37,10 @@ export const PostCard = memo(function PostCard({ post, detail = false }: { post:
   const name = post.author?.display_name || post.author?.username || 'Membre';
   const mine = Boolean(user && post.author?.id === user.id);
   const liked = Boolean(post.viewer?.liked);
-  const [community, ...otherTags] = post.tags;
+  const [firstTag, ...rest] = post.tags;
+  // Rangé dans un hub : le hub remplace la « communauté » (premier tag) et tous les tags restent.
+  const community = post.hub ? undefined : firstTag;
+  const otherTags = post.hub ? post.tags : rest;
   const open = () => router.push(`/post/${post.id}`);
 
   const share = () =>
@@ -48,7 +64,17 @@ export const PostCard = memo(function PostCard({ post, detail = false }: { post:
       ]}
     >
       <View style={styles.meta}>
-        {community ? (
+        {post.hub ? (
+          <>
+            <Pressable onPress={() => router.push(`/h/${post.hub!.slug}`)} hitSlop={6} style={styles.inline} accessibilityRole="link">
+              <HubIcon icon={post.hub.icon} name={post.hub.name} size={22} />
+              <Text variant="label" style={{ fontFamily: fonts.bold }} numberOfLines={1}>
+                h/{post.hub.slug}
+              </Text>
+            </Pressable>
+            <Dot />
+          </>
+        ) : community ? (
           <>
             <Pressable
               onPress={() => router.push({ pathname: '/feed', params: { tag: community } })}
@@ -71,12 +97,12 @@ export const PostCard = memo(function PostCard({ post, detail = false }: { post:
           style={[styles.inline, { flexShrink: 1 }]}
           accessibilityRole="link"
         >
-          <Avatar name={name} uri={post.author?.avatar_url} size={community ? 18 : 22} />
+          <Avatar name={name} uri={post.author?.avatar_url} size={community || post.hub ? 18 : 22} />
           <Text
             variant="small"
-            tone={community ? 'muted' : 'ink'}
+            tone={community || post.hub ? 'muted' : 'ink'}
             numberOfLines={1}
-            style={{ flexShrink: 1, fontFamily: community ? fonts.medium : fonts.bold }}
+            style={{ flexShrink: 1, fontFamily: community || post.hub ? fonts.medium : fonts.bold }}
           >
             {name}
           </Text>
@@ -95,6 +121,7 @@ export const PostCard = memo(function PostCard({ post, detail = false }: { post:
         ) : null}
       </View>
 
+      <Reputation karma={post.author?.karma} badge={post.author?.badges[0]?.label} />
       {post.title ? <Text variant="headlineMd">{post.title}</Text> : null}
       {post.body && !(post.kind === 'poll' && post.title) ? (
         post.kind === 'poll' ? (

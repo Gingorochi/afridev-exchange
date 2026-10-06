@@ -59,7 +59,7 @@ export function MarkdownEditor({
   }
 
   return (
-    <div className={cn('overflow-hidden rounded-xl border bg-card transition-colors focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15', invalid ? 'border-danger' : 'border-line')}>
+    <div className={cn('overflow-hidden rounded-lg border bg-card shadow-card transition-colors focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/15', invalid ? 'border-danger' : 'border-line-strong')}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-container-low px-2 py-1">
         <Segmented
           value={tab}
@@ -79,7 +79,7 @@ export function MarkdownEditor({
                 title={action.label}
                 aria-label={action.label}
                 onClick={() => apply(action)}
-                className="flex size-9 items-center justify-center rounded-full text-ink-muted hover:bg-container hover:text-ink"
+                className="flex size-8 items-center justify-center rounded-md text-ink-muted hover:bg-container hover:text-ink"
               >
                 <action.icon className="size-4" aria-hidden />
               </button>

@@ -1,14 +1,16 @@
 # web/ — Next.js feature-first
 
 Next.js 16 (App Router), Tailwind CSS 4, TanStack Query, PWA (Serwist).
-Interface fidèle à la maquette Stitch (`DESIGN.md` : terre cuite / émeraude, Plus Jakarta Sans + JetBrains Mono).
+Design system façon shadcn/ui (`components.json`, composants dans `src/shared/ui`) : base neutre
+inspirée de Vercel / GitHub, terre cuite AfriDev en accent, Geist + Geist Mono, thèmes clair et sombre.
 
 ```
 src/
 ├── app/          routes minces : assemblent features/ et shared/
 │   ├── (auth)/   connexion, code SMS, retour OAuth (colonne étroite)
 │   └── (main)/   pages avec le cadre (barre latérale, en-tête, onglets mobiles)
-├── features/     une feature = api.ts + components/ + index.ts (seul point d'entrée)
+├── features/     une feature = api.ts + components/ + index.ts (seul point d'entrée) :
+│                 hubs, bookmarks, jobs-events, profile, settings, feed, qa, snippets…
 └── shared/       socle sans métier : api, query, session, offline, data-saver, drafts,
                   security-guard, media, realtime, layout, ui, theme…
 ```

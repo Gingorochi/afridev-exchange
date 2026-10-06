@@ -79,6 +79,9 @@ modules = [
     "features.notifications",
     "features.moderation",
     "features.backoffice",
+    "features.hubs",
+    "features.bookmarks",
+    "features.jobs_events",
 ]
 ignore_imports = [
     "features.** -> features.*.services",

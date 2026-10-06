@@ -15,7 +15,30 @@ export const authApi = {
   requestOtp: (phone_number: string) => unwrap(api.POST('/api/accounts/otp/request/', { body: { phone_number } })),
   verifyOtp: (phone_number: string, code: string) =>
     unwrap(api.POST('/api/accounts/otp/verify/', { body: { phone_number, code } })),
+  loginMfa: (mfa_token: string, code: string) =>
+    unwrap(api.POST('/api/accounts/login/2fa/', { body: { mfa_token, code } })),
 };
+
+/** Défi de double authentification en cours (en mémoire : il expire au bout de 5 minutes). */
+let pendingMfa: { token: string; created: boolean } | null = null;
+export const mfaChallenge = {
+  get: () => pendingMfa,
+  clear: () => {
+    pendingMfa = null;
+  },
+};
+
+/**
+ * Suite commune à toutes les connexions : renvoie les jetons, ou null si la double
+ * authentification est active (le défi est gardé ; l'appelant ouvre /verify-2fa).
+ */
+export function tokensOrChallenge(response: AuthResponse): Schemas['Tokens'] | null {
+  if (response.mfa_required && response.mfa_token) {
+    pendingMfa = { token: response.mfa_token, created: response.created };
+    return null;
+  }
+  return response.tokens;
+}
 
 export const COUNTRIES = [
   { code: '+228', flag: '🇹🇬', name: 'Togo' },

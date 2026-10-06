@@ -35,14 +35,19 @@ export function Dialog({
         if (event.target === ref.current) onClose();
       }}
       className={cn(
-        'm-auto w-[min(32rem,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-0 text-ink shadow-raised backdrop:bg-black/50 backdrop:backdrop-blur-[2px]',
+        'animate-pop m-auto w-[min(32rem,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-0 text-ink shadow-raised backdrop:bg-black/40 backdrop:backdrop-blur-[3px]',
         className,
       )}
     >
-      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+      <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
         <h2 className="text-headline-md">{title}</h2>
-        <button type="button" onClick={onClose} aria-label="Fermer" className="flex size-10 items-center justify-center rounded-full bg-container hover:bg-container-high">
-          <X className="size-5" aria-hidden />
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fermer"
+          className="flex size-8 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-container hover:text-ink"
+        >
+          <X className="size-4" aria-hidden />
         </button>
       </div>
       <div className="px-5 pb-5">{open ? children : null}</div>

@@ -2,12 +2,22 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
+    AccessTokenDetailView,
+    AccessTokenListCreateView,
+    DataExportView,
     LoginView,
     MeView,
+    MFALoginView,
     OAuthLoginView,
     OTPRequestView,
     OTPVerifyView,
     RegisterView,
+    RevokeOtherSessionsView,
+    SessionDetailView,
+    SessionListView,
+    TOTPDisableView,
+    TOTPEnableView,
+    TOTPSetupView,
 )
 
 app_name = "accounts"
@@ -20,4 +30,14 @@ urlpatterns = [
     path("otp/verify/", OTPVerifyView.as_view(), name="otp-verify"),
     path("oauth/<str:provider>/", OAuthLoginView.as_view(), name="oauth"),
     path("me/", MeView.as_view(), name="me"),
+    path("me/export/", DataExportView.as_view(), name="export"),
+    path("login/2fa/", MFALoginView.as_view(), name="login-2fa"),
+    path("2fa/setup/", TOTPSetupView.as_view(), name="2fa-setup"),
+    path("2fa/enable/", TOTPEnableView.as_view(), name="2fa-enable"),
+    path("2fa/disable/", TOTPDisableView.as_view(), name="2fa-disable"),
+    path("sessions/", SessionListView.as_view(), name="sessions"),
+    path("sessions/revoke-others/", RevokeOtherSessionsView.as_view(), name="sessions-revoke"),
+    path("sessions/<uuid:session_id>/", SessionDetailView.as_view(), name="session"),
+    path("tokens/", AccessTokenListCreateView.as_view(), name="tokens"),
+    path("tokens/<uuid:token_id>/", AccessTokenDetailView.as_view(), name="token"),
 ]

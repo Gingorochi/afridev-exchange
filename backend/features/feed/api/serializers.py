@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from core.serializers import AuthorSerializer
+from core.serializers import AuthorSerializer, HubSummarySerializer
+from features.hubs import selectors as hub_selectors
 from features.media import selectors as media_selectors
 from features.profiles import selectors as profile_selectors
 
@@ -18,12 +19,14 @@ class PostInputSerializer(serializers.Serializer):
     )
     media_id = serializers.UUIDField(required=False, allow_null=True)
     tags = serializers.ListField(child=serializers.CharField(max_length=30), required=False)
+    hub_id = serializers.UUIDField(required=False, allow_null=True, help_text="Hub facultatif.")
 
 
 class PostUpdateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=200, required=False, allow_blank=True)
     body = serializers.CharField(max_length=3000, required=False, allow_blank=True)
     tags = serializers.ListField(child=serializers.CharField(max_length=30), required=False)
+    hub_id = serializers.UUIDField(required=False, allow_null=True)
 
 
 class ViewerStateSerializer(serializers.Serializer):
@@ -42,6 +45,7 @@ class PostOutputSerializer(serializers.Serializer):
     media_id = serializers.UUIDField(allow_null=True)
     media = serializers.JSONField(allow_null=True)
     tags = serializers.ListField(child=serializers.CharField())
+    hub = HubSummarySerializer(allow_null=True)
     score = serializers.IntegerField()
     like_count = serializers.IntegerField()
     comment_count = serializers.IntegerField()
@@ -71,6 +75,7 @@ def present_posts(posts, *, viewer) -> list[dict]:
     media = media_selectors.describe_many(asset_ids={post.media_id for post in posts})
     polls = selectors.poll_results(post_ids=[p.id for p in posts if p.kind == Post.Kind.POLL])
     states = selectors.viewer_state(post_ids=ids, user=viewer)
+    hubs = hub_selectors.hub_cards(hub_ids={post.hub_id for post in posts})
 
     return [
         {
@@ -87,6 +92,7 @@ def present_posts(posts, *, viewer) -> list[dict]:
             "media_id": post.media_id,
             "media": media.get(post.media_id),
             "tags": post.tags,
+            "hub": hubs.get(post.hub_id),
             "score": post.score,
             "like_count": post.like_count,
             "comment_count": post.comment_count,

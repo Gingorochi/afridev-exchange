@@ -4,6 +4,54 @@
  */
 
 export interface paths {
+    "/api/accounts/2fa/disable/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accounts_2fa_disable_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/accounts/2fa/enable/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accounts_2fa_enable_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/accounts/2fa/setup/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accounts_2fa_setup_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/accounts/login/": {
         parameters: {
             query?: never;
@@ -20,6 +68,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/accounts/login/2fa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Deuxième étape de la connexion : le code à 6 chiffres de l'application. */
+        post: operations["accounts_login_2fa_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/accounts/me/": {
         parameters: {
             query?: never;
@@ -28,6 +93,23 @@ export interface paths {
             cookie?: never;
         };
         get: operations["accounts_me_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/accounts/me/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Toutes mes données en JSON (téléchargement). */
+        get: operations["accounts_me_export_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -100,6 +182,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/accounts/sessions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["accounts_sessions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/accounts/sessions/{session_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["accounts_sessions_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/accounts/sessions/revoke-others/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accounts_sessions_revoke_others_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/accounts/token/refresh/": {
         parameters: {
             query?: never;
@@ -115,6 +245,38 @@ export interface paths {
          */
         post: operations["accounts_token_refresh_create"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/accounts/tokens/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["accounts_tokens_list"];
+        put?: never;
+        post: operations["accounts_tokens_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/accounts/tokens/{token_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["accounts_tokens_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -169,6 +331,105 @@ export interface paths {
         patch: operations["backoffice_members_update"];
         trace?: never;
     };
+    "/api/bookmarks/collections/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookmarks_collections_list"];
+        put?: never;
+        post: operations["bookmarks_collections_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bookmarks/collections/{collection_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookmarks_collections_retrieve"];
+        put?: never;
+        post?: never;
+        delete: operations["bookmarks_collections_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["bookmarks_collections_partial_update"];
+        trace?: never;
+    };
+    "/api/bookmarks/collections/{collection_id}/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookmarks_collections_items_retrieve"];
+        put?: never;
+        post: operations["bookmarks_collections_items_create"];
+        /** @description Retire un contenu de la collection : ?target_type=post&target_id=<uuid>. */
+        delete: operations["bookmarks_collections_items_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bookmarks/items/{item_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["bookmarks_items_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bookmarks/quick-save/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Enregistrement en un geste (sans choisir de collection) : dans la collection par défaut. */
+        post: operations["bookmarks_quick_save_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bookmarks/saved/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Tout ce que le membre a enregistré, avec les collections qui le contiennent. */
+        get: operations["bookmarks_saved_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/discussions/comments/{comment_id}/": {
         parameters: {
             query?: never;
@@ -209,6 +470,54 @@ export interface paths {
             cookie?: never;
         };
         get: operations["discussions_posts_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["events_list"];
+        put?: never;
+        post: operations["events_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/{event_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["events_retrieve"];
+        put?: never;
+        post?: never;
+        delete: operations["events_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["events_partial_update"];
+        trace?: never;
+    };
+    "/api/events/facets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["events_facets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -326,6 +635,121 @@ export interface paths {
             cookie?: never;
         };
         get: operations["health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/hubs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["hubs_list"];
+        put?: never;
+        post: operations["hubs_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/hubs/{slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["hubs_retrieve"];
+        put?: never;
+        post?: never;
+        delete: operations["hubs_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["hubs_partial_update"];
+        trace?: never;
+    };
+    "/api/hubs/{slug}/feed/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Fil d'un hub : GET /api/hubs/<slug>/feed/ (routé dans config/urls.py). */
+        get: operations["hubs_feed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/hubs/{slug}/join/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST : rejoindre (idempotent) ; DELETE : quitter. */
+        post: operations["hubs_join_create"];
+        /** @description POST : rejoindre (idempotent) ; DELETE : quitter. */
+        delete: operations["hubs_join_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/job-board/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["jobs_list"];
+        put?: never;
+        post: operations["job_board_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/job-board/{job_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["job_board_retrieve"];
+        put?: never;
+        post?: never;
+        delete: operations["job_board_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["job_board_partial_update"];
+        trace?: never;
+    };
+    "/api/job-board/facets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["jobs_facets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -552,7 +976,24 @@ export interface paths {
         get: operations["notifications_retrieve"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** @description Efface toutes les notifications du membre. */
+        delete: operations["notifications_clear"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/{notification_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["notifications_destroy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -588,6 +1029,24 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/notifications/preferences/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Réglages > Notifications : types reçus, push et e-mail. */
+        get: operations["notifications_preferences_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Réglages > Notifications : types reçus, push et e-mail. */
+        patch: operations["notifications_preferences_partial_update"];
         trace?: never;
     };
     "/api/notifications/read-all/": {
@@ -671,6 +1130,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/profiles/{username}/endorsements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET : compétences endossées ; POST / DELETE {skill} : endosser ou retirer son +1. */
+        get: operations["profiles_endorsements_list"];
+        put?: never;
+        /** @description GET : compétences endossées ; POST / DELETE {skill} : endosser ou retirer son +1. */
+        post: operations["profiles_endorsements_create"];
+        /** @description GET : compétences endossées ; POST / DELETE {skill} : endosser ou retirer son +1. */
+        delete: operations["profiles_endorsements_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profiles/{username}/github/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Dépôts, étoiles et langages du compte GitHub lié (cache 6 h) ; 404 s'il n'y en a pas. */
+        get: operations["profiles_github_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/profiles/{username}/qr.svg": {
         parameters: {
             query?: never;
@@ -713,6 +1208,23 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["profiles_me_ai_bio_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/profiles/me/pinned/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Remplace la liste des contenus épinglés (3 au plus, dans l'ordre donné). */
+        put: operations["profiles_me_pinned_update"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1208,9 +1720,43 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description * `indigo` - indigo
+         *     * `blue` - blue
+         *     * `cyan` - cyan
+         *     * `teal` - teal
+         *     * `emerald` - emerald
+         *     * `lime` - lime
+         *     * `amber` - amber
+         *     * `terracotta` - terracotta
+         *     * `rose` - rose
+         *     * `violet` - violet
+         *     * `slate` - slate
+         * @enum {string}
+         */
+        AccentColorEnum: "indigo" | "blue" | "cyan" | "teal" | "emerald" | "lime" | "amber" | "terracotta" | "rose" | "violet" | "slate";
         AcceptedJob: {
             /** Format: uuid */
             job_id: string;
+        };
+        AccessToken: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            prefix: string;
+            read_only: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_used_at: string | null;
+            /** Format: date-time */
+            expires_at: string | null;
+        };
+        AccessTokenInputRequest: {
+            name: string;
+            /** @default true */
+            read_only: boolean;
+            expires_in_days?: number | null;
         };
         AcknowledgeInputRequest: {
             ids: string[];
@@ -1328,10 +1874,16 @@ export interface components {
             /** @default  */
             message: string;
         };
+        /**
+         * @description Avec la double authentification : user et tokens sont null, mfa_required vaut true et
+         *     mfa_token s'échange contre les jetons via POST /api/accounts/login/2fa/.
+         */
         AuthResponse: {
-            user: components["schemas"]["User"];
-            tokens: components["schemas"]["Tokens"];
+            user: components["schemas"]["User"] | null;
+            tokens: components["schemas"]["Tokens"] | null;
             created: boolean;
+            mfa_required: boolean;
+            mfa_token: string | null;
         };
         Author: {
             /** Format: uuid */
@@ -1339,14 +1891,43 @@ export interface components {
             username: string;
             display_name: string;
             avatar_url: string;
+            location: string;
+            stack: string[];
+            karma: number;
+            badges: components["schemas"]["Badge"][];
         };
+        Badge: {
+            code: string;
+            label: string;
+        };
+        /** @enum {unknown} */
+        BlankEnum: "";
+        BookmarkTarget: {
+            title: string;
+            excerpt: string;
+            href: string;
+            language: string | null;
+            author: components["schemas"]["Author"] | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description * `post` - Post
+         *     * `question` - Question
+         *     * `snippet` - Snippet
+         * @enum {string}
+         */
+        BookmarkTargetTypeEnum: "post" | "question" | "snippet";
         Candidate: {
             /** Format: uuid */
             id: string;
             username: string;
             display_name: string;
             avatar_url: string;
+            location: string;
             stack: string[];
+            karma: number;
+            badges: components["schemas"]["Badge"][];
             open_to_work: boolean;
         };
         CandidateRecommendation: {
@@ -1354,6 +1935,24 @@ export interface components {
             /** Format: double */
             score: number;
             matched: string[];
+        };
+        CollectionInputRequest: {
+            name: string;
+            description?: string;
+            /** @default true */
+            is_private: boolean;
+        };
+        CollectionOutput: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description: string;
+            is_private: boolean;
+            item_count: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
         };
         CommentInputRequest: {
             /**
@@ -1391,6 +1990,31 @@ export interface components {
             projects: components["schemas"]["ProjectStats"];
             applications: components["schemas"]["ApplicationStats"];
         };
+        /**
+         * @description * `cdi` - CDI
+         *     * `cdd` - CDD
+         *     * `freelance` - Freelance
+         *     * `stage` - Stage
+         *     * `alternance` - Alternance
+         *     * `temps_partiel` - Temps partiel
+         * @enum {string}
+         */
+        ContractTypeEnum: "cdi" | "cdd" | "freelance" | "stage" | "alternance" | "temps_partiel";
+        CreatedAccessToken: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            prefix: string;
+            read_only: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_used_at: string | null;
+            /** Format: date-time */
+            expires_at: string | null;
+            /** @description Valeur complète, affichée une seule fois. */
+            token: string;
+        };
         /** @description Une entrée de la file locale (CrudEntry.toJSON() de PowerSync). */
         CrudOperationRequest: {
             op_id?: number;
@@ -1418,6 +2042,89 @@ export interface components {
             token: string;
             /** @default  */
             platform: components["schemas"]["PlatformEnum"];
+        };
+        Endorsement: {
+            skill: string;
+            count: number;
+            /** @description Les premiers pairs à l'avoir endossé. */
+            endorsers: components["schemas"]["Author"][];
+            endorsed_by_me: boolean;
+        };
+        EndorsementInputRequest: {
+            skill: string;
+        };
+        EventInputRequest: {
+            title: string;
+            kind: components["schemas"]["EventKindEnum"];
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at?: string | null;
+            location?: string;
+            country?: string;
+            /** @default false */
+            is_online: boolean;
+            organizer: string;
+            registration_url?: string;
+            description?: string;
+            tags?: string[];
+        };
+        /**
+         * @description * `meetup` - Meetup
+         *     * `hackathon` - Hackathon
+         *     * `webinar` - Webinar
+         *     * `conference` - Conférence
+         *     * `atelier` - Atelier
+         * @enum {string}
+         */
+        EventKindEnum: "meetup" | "hackathon" | "webinar" | "conference" | "atelier";
+        EventOutput: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            kind: components["schemas"]["EventKindEnum"];
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string | null;
+            location: string;
+            country: string;
+            is_online: boolean;
+            organizer: string;
+            registration_url: string;
+            description: string;
+            tags: string[];
+            author: components["schemas"]["Author"] | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        Facet: {
+            value: string;
+            count: number;
+        };
+        Facets: {
+            countries: components["schemas"]["Facet"][];
+            technologies: components["schemas"]["Facet"][];
+        };
+        GitHubLanguage: {
+            name: string;
+            repos: number;
+        };
+        GitHubOverview: {
+            login: string;
+            html_url: string;
+            public_repos: number;
+            followers: number;
+            total_stars: number;
+            top_languages: components["schemas"]["GitHubLanguage"][];
+            top_repos: components["schemas"]["GitHubRepo"][];
+        };
+        GitHubRepo: {
+            name: string;
+            url: string;
+            description: string;
+            language: string;
+            stars: number;
         };
         /**
          * @description Sérialiseur de sortie : tous les champs en lecture seule.
@@ -1461,6 +2168,48 @@ export interface components {
         Health: {
             status: string;
         };
+        HubInputRequest: {
+            name: string;
+            /** @default  */
+            slug: string;
+            description?: string;
+            icon?: string;
+            banner_url?: string;
+            rules?: string[];
+            target_country?: string;
+        };
+        HubOutput: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            description: string;
+            icon: string;
+            banner_url: string;
+            rules: string[];
+            target_country: string;
+            is_verified: boolean;
+            member_count: number;
+            creator: components["schemas"]["Author"] | null;
+            moderators: components["schemas"]["Author"][];
+            viewer: components["schemas"]["HubViewer"] | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description Hub (h/<slug>) auquel un post, une question ou un snippet est rattaché. */
+        HubSummary: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            icon: string;
+            is_verified: boolean;
+        };
+        HubViewer: {
+            is_member: boolean;
+            /** @description member, moderator ou null */
+            role: string | null;
+        };
         /**
          * @description Sérialiseur de sortie : tous les champs en lecture seule.
          *
@@ -1472,13 +2221,29 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly project_id: string;
-            /** Format: int64 */
             readonly number: number;
             readonly title: string;
             /** Format: uri */
             readonly url: string;
             readonly labels: string[];
             readonly is_open: boolean;
+        };
+        ItemInputRequest: {
+            target_type: components["schemas"]["BookmarkTargetTypeEnum"];
+            /** Format: uuid */
+            target_id: string;
+        };
+        ItemOutput: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            collection_id: string;
+            target_type: components["schemas"]["BookmarkTargetTypeEnum"];
+            /** Format: uuid */
+            target_id: string;
+            target: components["schemas"]["BookmarkTarget"] | null;
+            /** Format: date-time */
+            saved_at: string;
         };
         Job: {
             /** Format: uuid */
@@ -1487,6 +2252,39 @@ export interface components {
             result: unknown;
             error: string | null;
         };
+        JobInputRequest: {
+            title: string;
+            company: string;
+            location?: string;
+            country?: string;
+            /** @default false */
+            is_remote: boolean;
+            contract_type: components["schemas"]["ContractTypeEnum"];
+            description: string;
+            apply_url: string;
+            stack?: string[];
+            salary_range?: string;
+        };
+        JobOutput: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            company: string;
+            location: string;
+            country: string;
+            is_remote: boolean;
+            contract_type: components["schemas"]["ContractTypeEnum"];
+            description: string;
+            apply_url: string;
+            stack: string[];
+            salary_range: string;
+            is_active: boolean;
+            author: components["schemas"]["Author"] | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
         /**
          * @description * `pending` - pending
          *     * `done` - done
@@ -1494,6 +2292,14 @@ export interface components {
          * @enum {string}
          */
         JobStatusEnum: "pending" | "done" | "failed";
+        KarmaDetails: {
+            /** @default 0 */
+            upvotes: number;
+            /** @default 0 */
+            accepted_answers: number;
+            /** @default 0 */
+            snippet_saves: number;
+        };
         /**
          * @description * `fr` - fr
          *     * `en` - en
@@ -1507,6 +2313,10 @@ export interface components {
             /** @description Nom d'utilisateur ou e-mail. */
             identifier: string;
             password: string;
+        };
+        MFALoginInputRequest: {
+            mfa_token: string;
+            code: string;
         };
         /**
          * @description * `image` - Image
@@ -1613,12 +2423,7 @@ export interface components {
                 [key: string]: number;
             };
         };
-        /**
-         * @description Sérialiseur de sortie : tous les champs en lecture seule.
-         *
-         *     L'OpenAPI les marque alors « requis », et les types générés pour le web et le mobile
-         *     n'ont pas de champs faussement optionnels.
-         */
+        /** @description Forme lue par la page publique /u/<username> (cible du QR code). */
         MyProfile: {
             /** Format: uuid */
             readonly id: string;
@@ -1631,6 +2436,14 @@ export interface components {
             readonly location: string;
             readonly website: string;
             readonly open_to_work: boolean;
+            readonly accent_color: string;
+            readonly work_preferences: string[];
+            readonly daily_rate: string;
+            readonly availability_note: string;
+            readonly pinned: components["schemas"]["PinnedItem"][];
+            readonly karma_score: number;
+            readonly karma_details: components["schemas"]["KarmaDetails"];
+            readonly badges: components["schemas"]["ProfileBadge"][];
             /** Format: date-time */
             readonly created_at: string;
             readonly ai_bio_suggestion: string;
@@ -1655,6 +2468,10 @@ export interface components {
             readonly read_at: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        NotificationKind: {
+            value: string;
+            label: string;
         };
         /**
          * @description * `new_comment` - Nouveau commentaire
@@ -1703,12 +2520,40 @@ export interface components {
             previous: string | null;
             results: components["schemas"]["CommentOutput"][];
         };
+        PaginatedEventOutputList: {
+            /** Format: uri */
+            next: string | null;
+            /** Format: uri */
+            previous: string | null;
+            results: components["schemas"]["EventOutput"][];
+        };
+        PaginatedHubOutputList: {
+            /** Format: uri */
+            next: string | null;
+            /** Format: uri */
+            previous: string | null;
+            results: components["schemas"]["HubOutput"][];
+        };
         PaginatedIssueList: {
             /** Format: uri */
             next: string | null;
             /** Format: uri */
             previous: string | null;
             results: components["schemas"]["Issue"][];
+        };
+        PaginatedItemOutputList: {
+            /** Format: uri */
+            next: string | null;
+            /** Format: uri */
+            previous: string | null;
+            results: components["schemas"]["ItemOutput"][];
+        };
+        PaginatedJobOutputList: {
+            /** Format: uri */
+            next: string | null;
+            /** Format: uri */
+            previous: string | null;
+            results: components["schemas"]["JobOutput"][];
         };
         PaginatedMemberList: {
             /** Format: uri */
@@ -1766,6 +2611,47 @@ export interface components {
             previous: string | null;
             results: components["schemas"]["SnippetOutput"][];
         };
+        PatchedCollectionUpdateRequest: {
+            name?: string;
+            description?: string;
+            is_private?: boolean;
+        };
+        PatchedEventUpdateRequest: {
+            title?: string;
+            kind?: components["schemas"]["EventKindEnum"];
+            /** Format: date-time */
+            starts_at?: string;
+            /** Format: date-time */
+            ends_at?: string | null;
+            location?: string;
+            country?: string;
+            is_online?: boolean;
+            organizer?: string;
+            registration_url?: string;
+            description?: string;
+            tags?: string[];
+        };
+        PatchedHubUpdateRequest: {
+            name?: string;
+            description?: string;
+            icon?: string;
+            banner_url?: string;
+            rules?: string[];
+            target_country?: string;
+        };
+        PatchedJobUpdateRequest: {
+            title?: string;
+            company?: string;
+            location?: string;
+            country?: string;
+            is_remote?: boolean;
+            contract_type?: components["schemas"]["ContractTypeEnum"];
+            description?: string;
+            apply_url?: string;
+            stack?: string[];
+            salary_range?: string;
+            is_active?: boolean;
+        };
         PatchedMemberUpdateRequest: {
             is_active?: boolean;
             is_staff?: boolean;
@@ -1774,6 +2660,13 @@ export interface components {
             title?: string;
             body?: string;
             tags?: string[];
+            /** Format: uuid */
+            hub_id?: string | null;
+        };
+        PatchedPreferencesUpdateRequest: {
+            muted_kinds?: components["schemas"]["NotificationKindEnum"][];
+            push_enabled?: boolean;
+            email_enabled?: boolean;
         };
         PatchedProfileUpdateRequest: {
             display_name?: string;
@@ -1784,6 +2677,10 @@ export interface components {
             location?: string;
             website?: string;
             open_to_work?: boolean;
+            accent_color?: components["schemas"]["AccentColorEnum"] | components["schemas"]["BlankEnum"];
+            work_preferences?: components["schemas"]["WorkPreferencesEnum"][];
+            daily_rate?: string;
+            availability_note?: string;
         };
         PatchedProjectUpdateRequest: {
             name?: string;
@@ -1802,6 +2699,33 @@ export interface components {
             language?: string;
             content?: string;
             tags?: string[];
+            /** Format: uuid */
+            hub_id?: string | null;
+        };
+        PinInputRequest: {
+            target_type: components["schemas"]["PinTargetTypeEnum"];
+            /** Format: uuid */
+            target_id: string;
+        };
+        /**
+         * @description * `post` - post
+         *     * `question` - question
+         *     * `snippet` - snippet
+         *     * `project` - project
+         * @enum {string}
+         */
+        PinTargetTypeEnum: "post" | "question" | "snippet" | "project";
+        PinnedInputRequest: {
+            items: components["schemas"]["PinInputRequest"][];
+        };
+        PinnedItem: {
+            target_type: components["schemas"]["PinTargetTypeEnum"];
+            /** Format: uuid */
+            target_id: string;
+            title: string;
+            excerpt: string;
+            href: string;
+            language: string | null;
         };
         /**
          * @description * `ios` - ios
@@ -1829,6 +2753,11 @@ export interface components {
             /** Format: uuid */
             media_id?: string | null;
             tags?: string[];
+            /**
+             * Format: uuid
+             * @description Hub facultatif.
+             */
+            hub_id?: string | null;
         };
         /**
          * @description * `text` - Texte
@@ -1850,6 +2779,7 @@ export interface components {
             media_id: string | null;
             media: unknown;
             tags: string[];
+            hub: components["schemas"]["HubSummary"] | null;
             score: number;
             like_count: number;
             comment_count: number;
@@ -1871,6 +2801,20 @@ export interface components {
             token: string;
             /** Format: date-time */
             expires_at: string;
+        };
+        Preferences: {
+            muted_kinds: string[];
+            push_enabled: boolean;
+            email_enabled: boolean;
+            /** @description Types de notification réglables. */
+            kinds: components["schemas"]["NotificationKind"][];
+        };
+        ProfileBadge: {
+            code: string;
+            label: string;
+            description: string;
+            /** Format: date-time */
+            awarded_at: string;
         };
         ProjectInputRequest: {
             /**
@@ -1938,6 +2882,14 @@ export interface components {
             readonly location: string;
             readonly website: string;
             readonly open_to_work: boolean;
+            readonly accent_color: string;
+            readonly work_preferences: string[];
+            readonly daily_rate: string;
+            readonly availability_note: string;
+            readonly pinned: components["schemas"]["PinnedItem"][];
+            readonly karma_score: number;
+            readonly karma_details: components["schemas"]["KarmaDetails"];
+            readonly badges: components["schemas"]["ProfileBadge"][];
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -1949,6 +2901,7 @@ export interface components {
             language: string;
             content: string;
             tags: string[];
+            hub: components["schemas"]["HubSummary"] | null;
             /** Format: date-time */
             published_at: string;
             author: components["schemas"]["Author"] | null;
@@ -1975,6 +2928,11 @@ export interface components {
             tags?: string[];
             /** Format: uuid */
             audio_media_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Hub facultatif.
+             */
+            hub_id?: string | null;
         };
         /** @description Forme lue aussi par la page publique /questions/<id> (rendu serveur). */
         QuestionOutput: {
@@ -1985,6 +2943,7 @@ export interface components {
             tags: string[];
             /** Format: uuid */
             audio_media_id: string | null;
+            hub: components["schemas"]["HubSummary"] | null;
             ai_answer: string | null;
             ai_answer_status: components["schemas"]["AiAnswerStatusEnum"];
             ai_answer_sources: components["schemas"]["AiSource"][];
@@ -2073,6 +3032,15 @@ export interface components {
         ResolveInputRequest: {
             action: components["schemas"]["ActionEnum"];
         };
+        RevokedCount: {
+            revoked: number;
+        };
+        SavedTarget: {
+            target_type: components["schemas"]["BookmarkTargetTypeEnum"];
+            /** Format: uuid */
+            target_id: string;
+            collection_ids: string[];
+        };
         ScanInputRequest: {
             content: string;
         };
@@ -2090,6 +3058,27 @@ export interface components {
             rule_id: string;
             description: string;
             line: number;
+        };
+        Session: {
+            /** Format: uuid */
+            id: string;
+            device: string;
+            user_agent: string;
+            ip_address: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_used_at: string | null;
+            current: boolean;
+        };
+        /** @description Renouvellement des jetons : refusé si la session (claim « sid ») a été révoquée. */
+        SessionTokenRefresh: {
+            refresh: string;
+            readonly access: string;
+        };
+        /** @description Renouvellement des jetons : refusé si la session (claim « sid ») a été révoquée. */
+        SessionTokenRefreshRequest: {
+            refresh: string;
         };
         SimilarQuestion: {
             source_type: string;
@@ -2113,6 +3102,11 @@ export interface components {
             tags?: string[];
             /** @default false */
             is_public: boolean;
+            /**
+             * Format: uuid
+             * @description Hub facultatif.
+             */
+            hub_id?: string | null;
         };
         /**
          * @description Sérialiseur de sortie : tous les champs en lecture seule.
@@ -2128,6 +3122,8 @@ export interface components {
             readonly content: string;
             readonly tags: string[];
             readonly is_public: boolean;
+            /** Format: uuid */
+            readonly hub_id: string | null;
             /** Format: date-time */
             readonly published_at: string | null;
             readonly ai_review: unknown;
@@ -2150,7 +3146,6 @@ export interface components {
          *     n'ont pas de champs faussement optionnels.
          */
         SnippetVersion: {
-            /** Format: int64 */
             readonly number: number;
             readonly content: string;
             /** Format: date-time */
@@ -2195,6 +3190,15 @@ export interface components {
             new: number;
             unacknowledged: number;
         };
+        TOTPCodeRequest: {
+            code: string;
+        };
+        TOTPSetup: {
+            /** @description À saisir à la main si le QR code ne passe pas. */
+            secret: string;
+            otpauth_url: string;
+            qr_svg: string;
+        };
         /**
          * @description * `fr` - Français
          *     * `en` - English
@@ -2219,13 +3223,6 @@ export interface components {
             posts: number;
             comments: number;
             qa: number;
-        };
-        TokenRefresh: {
-            readonly access: string;
-            refresh: string;
-        };
-        TokenRefreshRequest: {
-            refresh: string;
         };
         Tokens: {
             access: string;
@@ -2319,6 +3316,7 @@ export interface components {
              * @description Précise que l’utilisateur possède toutes les permissions sans les assigner explicitement.
              */
             readonly is_superuser: boolean;
+            readonly two_factor_enabled: boolean;
         };
         /**
          * @description * `-1` - -1
@@ -2345,6 +3343,15 @@ export interface components {
              */
             value: components["schemas"]["ValueEnum"];
         };
+        /**
+         * @description * `cdi_remote` - CDI en télétravail
+         *     * `cdi_onsite` - CDI sur site
+         *     * `freelance` - Freelance
+         *     * `mentorat` - Mentorat
+         *     * `stage` - Stage / alternance
+         * @enum {string}
+         */
+        WorkPreferencesEnum: "cdi_remote" | "cdi_onsite" | "freelance" | "mentorat" | "stage";
     };
     responses: never;
     parameters: never;
@@ -2354,6 +3361,75 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    accounts_2fa_disable_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TOTPCodeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TOTPCodeRequest"];
+                "multipart/form-data": components["schemas"]["TOTPCodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    accounts_2fa_enable_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TOTPCodeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TOTPCodeRequest"];
+                "multipart/form-data": components["schemas"]["TOTPCodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    accounts_2fa_setup_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TOTPSetup"];
+                };
+            };
+        };
+    };
     accounts_login_create: {
         parameters: {
             query?: never;
@@ -2366,6 +3442,31 @@ export interface operations {
                 "application/json": components["schemas"]["LoginInputRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["LoginInputRequest"];
                 "multipart/form-data": components["schemas"]["LoginInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+        };
+    };
+    accounts_login_2fa_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MFALoginInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MFALoginInputRequest"];
+                "multipart/form-data": components["schemas"]["MFALoginInputRequest"];
             };
         };
         responses: {
@@ -2394,6 +3495,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    accounts_me_export_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -2500,6 +3622,64 @@ export interface operations {
             };
         };
     };
+    accounts_sessions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"][];
+                };
+            };
+        };
+    };
+    accounts_sessions_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    accounts_sessions_revoke_others_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokedCount"];
+                };
+            };
+        };
+    };
     accounts_token_refresh_create: {
         parameters: {
             query?: never;
@@ -2509,9 +3689,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TokenRefreshRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["TokenRefreshRequest"];
-                "multipart/form-data": components["schemas"]["TokenRefreshRequest"];
+                "application/json": components["schemas"]["SessionTokenRefreshRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SessionTokenRefreshRequest"];
+                "multipart/form-data": components["schemas"]["SessionTokenRefreshRequest"];
             };
         };
         responses: {
@@ -2520,8 +3700,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TokenRefresh"];
+                    "application/json": components["schemas"]["SessionTokenRefresh"];
                 };
+            };
+        };
+    };
+    accounts_tokens_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessToken"][];
+                };
+            };
+        };
+    };
+    accounts_tokens_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessTokenInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AccessTokenInputRequest"];
+                "multipart/form-data": components["schemas"]["AccessTokenInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedAccessToken"];
+                };
+            };
+        };
+    };
+    accounts_tokens_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2596,6 +3840,258 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Member"];
+                };
+            };
+        };
+    };
+    bookmarks_collections_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionOutput"][];
+                };
+            };
+        };
+    };
+    bookmarks_collections_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CollectionInputRequest"];
+                "multipart/form-data": components["schemas"]["CollectionInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionOutput"];
+                };
+            };
+        };
+    };
+    bookmarks_collections_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionOutput"];
+                };
+            };
+        };
+    };
+    bookmarks_collections_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bookmarks_collections_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCollectionUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCollectionUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedCollectionUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionOutput"];
+                };
+            };
+        };
+    };
+    bookmarks_collections_items_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Curseur de la page suivante */
+                cursor?: string;
+                /** @description 20 par défaut, 50 maximum */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedItemOutputList"];
+                };
+            };
+        };
+    };
+    bookmarks_collections_items_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ItemInputRequest"];
+                "multipart/form-data": components["schemas"]["ItemInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemOutput"];
+                };
+            };
+        };
+    };
+    bookmarks_collections_items_destroy: {
+        parameters: {
+            query: {
+                target_id: string;
+                target_type: "post" | "question" | "snippet";
+            };
+            header?: never;
+            path: {
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bookmarks_items_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bookmarks_quick_save_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ItemInputRequest"];
+                "multipart/form-data": components["schemas"]["ItemInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemOutput"];
+                };
+            };
+        };
+    };
+    bookmarks_saved_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedTarget"][];
                 };
             };
         };
@@ -2694,6 +4190,149 @@ export interface operations {
             };
         };
     };
+    events_list: {
+        parameters: {
+            query?: {
+                country?: string;
+                /** @description Curseur de la page suivante */
+                cursor?: string;
+                kind?: string;
+                online?: boolean;
+                /** @description 20 par défaut, 50 maximum */
+                page_size?: number;
+                /** @description Événements passés */
+                past?: boolean;
+                q?: string;
+                tech?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedEventOutputList"];
+                };
+            };
+        };
+    };
+    events_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EventInputRequest"];
+                "multipart/form-data": components["schemas"]["EventInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventOutput"];
+                };
+            };
+        };
+    };
+    events_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventOutput"];
+                };
+            };
+        };
+    };
+    events_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    events_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedEventUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedEventUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedEventUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventOutput"];
+                };
+            };
+        };
+    };
+    events_facets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Facets"];
+                };
+            };
+        };
+    };
     feed_list: {
         parameters: {
             query?: {
@@ -2701,6 +4340,8 @@ export interface operations {
                 author?: string;
                 /** @description Curseur de la page suivante */
                 cursor?: string;
+                /** @description Slug ou UUID du hub */
+                hub?: string;
                 kind?: string;
                 /** @description 20 par défaut, 50 maximum */
                 page_size?: number;
@@ -2934,6 +4575,341 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    hubs_list: {
+        parameters: {
+            query?: {
+                country?: string;
+                /** @description Curseur de la page suivante */
+                cursor?: string;
+                /** @description Hubs dont je suis membre */
+                mine?: boolean;
+                /** @description 20 par défaut, 50 maximum */
+                page_size?: number;
+                q?: string;
+                sort?: "new" | "popular";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedHubOutputList"];
+                };
+            };
+        };
+    };
+    hubs_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["HubInputRequest"];
+                "multipart/form-data": components["schemas"]["HubInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubOutput"];
+                };
+            };
+        };
+    };
+    hubs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubOutput"];
+                };
+            };
+        };
+    };
+    hubs_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    hubs_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedHubUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedHubUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedHubUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubOutput"];
+                };
+            };
+        };
+    };
+    hubs_feed: {
+        parameters: {
+            query?: {
+                /** @description Curseur de la page suivante */
+                cursor?: string;
+                kind?: string;
+                /** @description 20 par défaut, 50 maximum */
+                page_size?: number;
+                sort?: "hot" | "new" | "top";
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPostOutputList"];
+                };
+            };
+        };
+    };
+    hubs_join_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HubOutput"];
+                };
+            };
+        };
+    };
+    hubs_join_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    jobs_list: {
+        parameters: {
+            query?: {
+                /** @description UUID de l'auteur */
+                author?: string;
+                contract?: string;
+                country?: string;
+                /** @description Curseur de la page suivante */
+                cursor?: string;
+                /** @description 20 par défaut, 50 maximum */
+                page_size?: number;
+                q?: string;
+                remote?: boolean;
+                /** @description Technologie demandée */
+                tech?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedJobOutputList"];
+                };
+            };
+        };
+    };
+    job_board_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["JobInputRequest"];
+                "multipart/form-data": components["schemas"]["JobInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOutput"];
+                };
+            };
+        };
+    };
+    job_board_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOutput"];
+                };
+            };
+        };
+    };
+    job_board_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    job_board_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedJobUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedJobUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedJobUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOutput"];
+                };
+            };
+        };
+    };
+    jobs_facets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Facets"];
                 };
             };
         };
@@ -3306,6 +5282,44 @@ export interface operations {
             };
         };
     };
+    notifications_clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    notifications_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     notifications_read_create: {
         parameters: {
             query?: never;
@@ -3366,6 +5380,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    notifications_preferences_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+        };
+    };
+    notifications_preferences_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPreferencesUpdateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPreferencesUpdateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPreferencesUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
             };
         };
     };
@@ -3503,6 +5561,97 @@ export interface operations {
             };
         };
     };
+    profiles_endorsements_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Endorsement"][];
+                };
+            };
+        };
+    };
+    profiles_endorsements_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndorsementInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EndorsementInputRequest"];
+                "multipart/form-data": components["schemas"]["EndorsementInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Endorsement"][];
+                };
+            };
+        };
+    };
+    profiles_endorsements_destroy: {
+        parameters: {
+            query: {
+                skill: string;
+            };
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    profiles_github_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GitHubOverview"];
+                };
+            };
+        };
+    };
     "profiles_qr.svg_retrieve": {
         parameters: {
             query?: never;
@@ -3578,6 +5727,31 @@ export interface operations {
         requestBody?: never;
         responses: {
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyProfile"];
+                };
+            };
+        };
+    };
+    profiles_me_pinned_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PinnedInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PinnedInputRequest"];
+                "multipart/form-data": components["schemas"]["PinnedInputRequest"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3849,6 +6023,8 @@ export interface operations {
                 author?: string;
                 /** @description Curseur de la page suivante */
                 cursor?: string;
+                /** @description Slug ou UUID du hub */
+                hub?: string;
                 /** @description 20 par défaut, 50 maximum */
                 page_size?: number;
                 q?: string;
@@ -4291,6 +6467,8 @@ export interface operations {
                 author?: string;
                 /** @description Curseur de la page suivante */
                 cursor?: string;
+                /** @description Slug ou UUID du hub */
+                hub?: string;
                 language?: string;
                 /** @description 20 par défaut, 50 maximum */
                 page_size?: number;

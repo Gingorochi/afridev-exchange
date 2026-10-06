@@ -10,6 +10,7 @@ export type OAuthProvider = 'github' | 'gitlab';
 const PHONE_KEY = 'afridev.otp-phone';
 const STATE_KEY = 'afridev.oauth-state';
 const NEXT_KEY = 'afridev.after-login';
+const MFA_KEY = 'afridev.mfa';
 
 export const authApi = {
   login: (identifier: string, password: string) =>
@@ -20,6 +21,8 @@ export const authApi = {
     unwrap(api.POST('/api/accounts/otp/request/', { body: { phone_number } })),
   verifyOtp: (phone_number: string, code: string) =>
     unwrap(api.POST('/api/accounts/otp/verify/', { body: { phone_number, code } })),
+  loginMfa: (mfa_token: string, code: string) =>
+    unwrap(api.POST('/api/accounts/login/2fa/', { body: { mfa_token, code } })),
   oauth: (provider: OAuthProvider, code: string, redirect_uri: string) =>
     unwrap(
       api.POST('/api/accounts/oauth/{provider}/', {
@@ -28,6 +31,32 @@ export const authApi = {
       }),
     ),
 };
+
+/** Connexion en deux temps (double authentification) : jeton signé valable 5 minutes. */
+export const pendingMfa = {
+  get: (): { token: string; created: boolean } | null => {
+    try {
+      return JSON.parse(sessionStorage.getItem(MFA_KEY) ?? 'null');
+    } catch {
+      return null;
+    }
+  },
+  set: (token: string, created: boolean) => sessionStorage.setItem(MFA_KEY, JSON.stringify({ token, created })),
+  clear: () => sessionStorage.removeItem(MFA_KEY),
+};
+
+/**
+ * Suite commune à toutes les méthodes de connexion : ouvre la session, ou, si la double
+ * authentification est active, mémorise le défi et renvoie false (l'appelant redirige vers /verify-2fa).
+ */
+export function completeAuth(response: AuthResponse, signIn: (tokens: Schemas['Tokens']) => void): boolean {
+  if (response.mfa_required && response.mfa_token) {
+    pendingMfa.set(response.mfa_token, response.created);
+    return false;
+  }
+  if (response.tokens) signIn(response.tokens);
+  return Boolean(response.tokens);
+}
 
 export const pendingPhone = {
   get: () => sessionStorage.getItem(PHONE_KEY),

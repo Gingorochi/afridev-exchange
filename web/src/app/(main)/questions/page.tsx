@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
-import { PopularCommunitiesCard } from '@/features/feed';
+import { RecommendedHubsCard } from '@/features/hubs';
+import { RecentJobsCard } from '@/features/jobs-events';
 import { RecruitingProjectsCard } from '@/features/projects';
 import { QuestionsScreen } from '@/features/qa';
 import { CardSkeleton } from '@/shared/ui';
@@ -17,8 +18,9 @@ export default function QuestionsPage() {
       <QuestionsScreen
         aside={
           <>
-            <PopularCommunitiesCard />
-            <RecruitingProjectsCard />
+            <RecommendedHubsCard />
+            <RecentJobsCard />
+            <RecruitingProjectsCard title="Projets qui recrutent" />
           </>
         }
       />

@@ -219,3 +219,42 @@ def list_user_repos(username: str, *, limit: int = 10) -> list[dict]:
         for repo in repos or []
         if not repo.get("fork")
     ]
+
+
+def get_user_overview(username: str, *, repo_limit: int = 100) -> dict | None:
+    """Profil public d'un compte GitHub : dépôts, étoiles, langages (section du profil AfriDev).
+
+    None si le compte n'existe pas ; GitHubError si GitHub est injoignable.
+    """
+    with _github() as client:
+        user = _get(client, f"/users/{username}")
+        if user is None:
+            return None
+        repos = _get(client, f"/users/{username}/repos", sort="pushed", per_page=repo_limit) or []
+    own = [repo for repo in repos if not repo.get("fork")]
+    languages: dict[str, int] = {}
+    for repo in own:
+        if repo.get("language"):
+            languages[repo["language"]] = languages.get(repo["language"], 0) + 1
+    top = sorted(own, key=lambda repo: repo.get("stargazers_count", 0), reverse=True)[:4]
+    return {
+        "login": user.get("login", username),
+        "html_url": user.get("html_url", f"https://github.com/{username}"),
+        "public_repos": user.get("public_repos", 0),
+        "followers": user.get("followers", 0),
+        "total_stars": sum(repo.get("stargazers_count", 0) for repo in own),
+        "top_languages": [
+            {"name": name, "repos": count}
+            for name, count in sorted(languages.items(), key=lambda item: (-item[1], item[0]))[:6]
+        ],
+        "top_repos": [
+            {
+                "name": repo["name"],
+                "url": repo.get("html_url", ""),
+                "description": repo.get("description") or "",
+                "language": repo.get("language") or "",
+                "stars": repo.get("stargazers_count", 0),
+            }
+            for repo in top
+        ],
+    }

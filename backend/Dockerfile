@@ -25,6 +25,12 @@ RUN uv sync --no-dev
 # Copie du code source
 COPY . ./
 
+# Règles anti-secrets partagées avec le web et le mobile (packages/validation), hors du contexte
+# ./backend : fournies par docker-compose (additional_contexts) ou par
+# `docker build --build-context security-guard=packages/validation/src/security-guard backend`.
+COPY --from=security-guard rules.json /app/security-guard/rules.json
+ENV SECURITY_GUARD_RULES_PATH=/app/security-guard/rules.json
+
 ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000

@@ -3,16 +3,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
+  Bell,
   Clock,
   Database,
   Gauge,
   Languages,
+  Lock,
   LogOut,
   Monitor,
   Moon,
   Palette,
   RefreshCw,
   Send,
+  ShieldCheck,
   Sun,
   Trash2,
 } from 'lucide-react';
@@ -26,17 +29,43 @@ import { cn, formatBytes } from '@/shared/lib';
 import { flushOutbox, removeFromOutbox, useOutbox, useStorageEstimate } from '@/shared/offline';
 import { useSession } from '@/shared/session';
 import { type ThemePreference, useTheme } from '@/shared/theme';
-import { Button, Card, CardHeader, Segmented, StatusBadge, TimeAgo, useToast } from '@/shared/ui';
+import { Button, Card, CardHeader, Segmented, StatusBadge, Tabs, TimeAgo, useToast } from '@/shared/ui';
+
+import { NotificationsTab } from './NotificationsTab';
+import { PrivacyTab } from './PrivacyTab';
+import { SecurityTab } from './SecurityTab';
+
+type SettingsTab = 'general' | 'security' | 'notifications' | 'privacy';
 
 export function SettingsScreen() {
+  const { isAuthenticated } = useSession();
+  const [tab, setTab] = useState<SettingsTab>('general');
   return (
     <>
       <PageHeader
         eyebrow="Configuration"
         title="Paramètres & préférences"
-        description="Réglez la consommation de données, la synchronisation hors ligne et l'apparence pour une utilisation fluide, même en 2G."
+        description="Données, sécurité du compte, notifications et confidentialité."
       />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <Tabs<SettingsTab>
+        className="mb-6"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'general', label: 'Général & Low-Data', icon: <Gauge className="size-4" aria-hidden /> },
+          ...(isAuthenticated
+            ? [
+                { value: 'security' as const, label: 'Sécurité & Sessions', icon: <ShieldCheck className="size-4" aria-hidden /> },
+                { value: 'notifications' as const, label: 'Notifications', icon: <Bell className="size-4" aria-hidden /> },
+                { value: 'privacy' as const, label: 'Confidentialité & Export RGPD', icon: <Lock className="size-4" aria-hidden /> },
+              ]
+            : []),
+        ]}
+      />
+      {tab === 'security' ? <SecurityTab /> : null}
+      {tab === 'notifications' ? <NotificationsTab /> : null}
+      {tab === 'privacy' ? <PrivacyTab /> : null}
+      <div hidden={tab !== 'general'} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="min-w-0 space-y-6">
           <DataCard />
           <OutboxCard />

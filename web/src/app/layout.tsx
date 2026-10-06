@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 
 import { AppProviders } from '@/shared/providers/AppProviders';
 import { preferencesScript } from '@/shared/theme';
@@ -7,16 +7,15 @@ import { preferencesScript } from '@/shared/theme';
 import '@/styles/globals.css';
 
 // Polices auto-hébergées et sous-ensemble latin : aucune requête vers Google côté visiteur.
-const jakarta = Plus_Jakarta_Sans({
+// Geist (Vercel) : police variable, un seul fichier couvre toutes les graisses.
+const geist = Geist({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-jakarta',
+  variable: '--font-geist-sans',
   display: 'swap',
 });
-const jetbrains = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-jetbrains',
+  variable: '--font-geist-mono',
   display: 'swap',
   preload: false,
 });
@@ -32,7 +31,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#15191c' },
+    { media: '(prefers-color-scheme: dark)', color: '#111113' },
   ],
   width: 'device-width',
   initialScale: 1,
@@ -40,7 +39,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${jakarta.variable} ${jetbrains.variable}`} suppressHydrationWarning>
+    <html lang="fr" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
         {/* Thème et mode « Texte seul » appliqués avant l'affichage (pas de flash). */}
         <script dangerouslySetInnerHTML={{ __html: preferencesScript }} />

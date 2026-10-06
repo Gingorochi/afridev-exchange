@@ -8,7 +8,7 @@ import { errorMessage } from '@/shared/api';
 import { useSession } from '@/shared/session';
 import { buttonClasses, ErrorNotice, Spinner } from '@/shared/ui';
 
-import { afterLogin, authApi, consumeOAuthState, oauthRedirectUri } from '../api';
+import { afterLogin, authApi, completeAuth, consumeOAuthState, oauthRedirectUri } from '../api';
 
 /** Retour de GitHub / GitLab : échange du code contre une session AfriDev. */
 export function OAuthCallback() {
@@ -34,7 +34,10 @@ export function OAuthCallback() {
       }
       try {
         const response = await authApi.oauth(provider, code, oauthRedirectUri());
-        signIn(response.tokens);
+        if (!completeAuth(response, signIn)) {
+          router.replace('/verify-2fa');
+          return;
+        }
         router.replace(response.created ? '/profile?welcome=1' : afterLogin.take());
       } catch (e) {
         setError(errorMessage(e));

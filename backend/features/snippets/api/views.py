@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 
 from core.pagination import CursorPagination
 from core.schema import CURSOR_PARAMETERS, paginated
+from features.hubs import selectors as hub_selectors
 from features.profiles import selectors as profile_selectors
 
 from .. import selectors, services
@@ -33,6 +34,7 @@ def _owned(request, snippet_id):
 def _present_public(snippets) -> list[dict]:
     snippets = list(snippets)
     authors = profile_selectors.author_cards(user_ids={s.owner_id for s in snippets})
+    hubs = hub_selectors.hub_cards(hub_ids={s.hub_id for s in snippets})
     return [
         {
             "id": s.id,
@@ -40,6 +42,7 @@ def _present_public(snippets) -> list[dict]:
             "language": s.language,
             "content": s.content,
             "tags": s.tags,
+            "hub": hubs.get(s.hub_id),
             "published_at": s.published_at,
             "author": authors.get(s.owner_id),
         }
@@ -119,16 +122,22 @@ class PublicSnippetListView(APIView):
             OpenApiParameter("language", str, required=False),
             OpenApiParameter("q", str, required=False),
             OpenApiParameter("author", str, required=False, description="UUID de l'auteur"),
+            OpenApiParameter("hub", str, required=False, description="Slug ou UUID du hub"),
         ],
         responses=paginated(PublicSnippetSerializer),
         operation_id="snippets_public_list",
     )
     def get(self, request):
+        hub = request.query_params.get("hub")
+        hub_id = hub_selectors.resolve_hub_id(value=hub) if hub else None
         snippets = selectors.list_public_snippets(
             language=request.query_params.get("language"),
             query=request.query_params.get("q"),
             owner_id=request.query_params.get("author"),
+            hub_id=hub_id,
         )
+        if hub and hub_id is None:
+            snippets = snippets.none()
         paginator = CursorPagination()
         page = paginator.paginate_queryset(snippets, request)
         return paginator.get_paginated_response(_present_public(page))

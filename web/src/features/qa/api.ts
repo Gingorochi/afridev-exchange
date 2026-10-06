@@ -17,6 +17,8 @@ export interface QuestionFilters {
   tag?: string;
   resolved?: boolean;
   author?: string;
+  /** Slug ou UUID du hub. */
+  hub?: string;
 }
 
 export const qaKeys = {
@@ -66,6 +68,7 @@ export interface NewQuestion {
   body: string;
   tags: string[];
   audio_media_id?: string | null;
+  hub_id?: string | null;
 }
 
 export function askQuestion(input: NewQuestion) {
@@ -76,7 +79,7 @@ export function askQuestion(input: NewQuestion) {
       id,
       op: 'PUT',
       type: 'questions',
-      data: { title: input.title, body: input.body, tags: input.tags },
+      data: { title: input.title, body: input.body, tags: input.tags, hub_id: input.hub_id ?? null },
       label: `Question : ${input.title.slice(0, 40)}`,
     },
   );

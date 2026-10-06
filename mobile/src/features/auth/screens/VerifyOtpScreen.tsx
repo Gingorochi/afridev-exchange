@@ -7,7 +7,7 @@ import { useSession } from '@/shared/session';
 import { fonts, radius, space, useTheme } from '@/shared/theme';
 import { Button, Icon, Screen, ScreenHeader, Text } from '@/shared/ui';
 
-import { authApi, markOnboarded, maskPhone } from '../api';
+import { authApi, markOnboarded, maskPhone, tokensOrChallenge } from '../api';
 
 const LENGTH = 6;
 const RESEND_AFTER = 45;
@@ -33,7 +33,12 @@ export function VerifyOtpScreen() {
     setLoading(true);
     try {
       const response = await authApi.verifyOtp(phone, value);
-      signIn(response.tokens);
+      const tokens = tokensOrChallenge(response);
+      if (!tokens) {
+        router.replace('/verify-2fa');
+        return;
+      }
+      signIn(tokens);
       markOnboarded();
       router.replace(response.created ? '/profile' : '/feed');
     } catch (e) {

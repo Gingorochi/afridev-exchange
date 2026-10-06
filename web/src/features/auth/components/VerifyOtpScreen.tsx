@@ -11,7 +11,7 @@ import { cn } from '@/shared/lib';
 import { useSession } from '@/shared/session';
 import { Button } from '@/shared/ui';
 
-import { afterLogin, authApi, maskPhone, pendingPhone } from '../api';
+import { afterLogin, authApi, completeAuth, maskPhone, pendingPhone } from '../api';
 
 const RESEND_AFTER = 45;
 const LENGTH = 6;
@@ -55,7 +55,10 @@ export function VerifyOtpScreen() {
     setLoading(true);
     try {
       const response = await authApi.verifyOtp(phone, value);
-      signIn(response.tokens);
+      if (!completeAuth(response, signIn)) {
+        router.replace('/verify-2fa');
+        return;
+      }
       router.replace(response.created ? '/profile?welcome=1' : afterLogin.take());
     } catch (e) {
       setError(errorMessage(e));

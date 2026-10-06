@@ -8,9 +8,10 @@ from django.db.models import Count, F, Q, Sum
 
 from core.exceptions import DomainError, NotFoundError, PermissionDeniedError
 from core.utils import normalize_tags, parse_json_list
+from features.hubs import services as hub_services
 from features.media import selectors as media_selectors
 
-from .events import post_liked, post_published
+from .events import post_liked, post_published, post_vote_changed
 from .models import PollVote, Post, PostLike
 
 MEDIA_KIND = {Post.Kind.IMAGE: "image", Post.Kind.SHORT: "video"}
@@ -73,6 +74,7 @@ def create_post(
     poll_options: list | None = None,
     media_id=None,
     tags: list | None = None,
+    hub_id=None,
     post_id=None,
 ) -> Post:
     """`post_id` : identifiant généré hors ligne par le client (rejouer l'envoi est sans effet)."""
@@ -99,6 +101,7 @@ def create_post(
         poll_options=options,
         media_id=media_id or None,
         tags=normalize_tags(tags),
+        hub_id=hub_services.require_hub(hub_id=hub_id),
     )
     if post_id:
         post.id = post_id
@@ -120,8 +123,15 @@ def create_post(
 
 @transaction.atomic
 def update_post(
-    *, post: Post, user, title: str | None = None, body: str | None = None, tags=None
+    *,
+    post: Post,
+    user,
+    title: str | None = None,
+    body: str | None = None,
+    tags=None,
+    hub_id=...,
 ) -> Post:
+    """hub_id : absent = inchangé, None = retirer du hub, UUID = déplacer dans ce hub."""
     if post.author_id != user.id:
         raise PermissionDeniedError("Seul l'auteur peut modifier ce post.")
     fields = []
@@ -136,6 +146,9 @@ def update_post(
     if tags is not None:
         post.tags = normalize_tags(tags)
         fields.append("tags")
+    if hub_id is not ... and hub_id != post.hub_id:
+        post.hub_id = hub_services.require_hub(hub_id=hub_id)
+        fields.append("hub_id")
     if fields:
         post.save(update_fields=[*fields, "updated_at"])
     return post
@@ -199,6 +212,10 @@ def set_vote(*, post: Post, user, value: int) -> Post:
     post.hot, post.top = ranks(score=post.score, created_at=post.created_at)
     post.save(update_fields=["score", "like_count", "hot", "top", "updated_at"])
 
+    if value != (previous or 0):
+        transaction.on_commit(
+            lambda: post_vote_changed.send(sender=Post, post_id=post.id, author_id=post.author_id)
+        )
     if value == 1 and previous != 1 and post.author_id != user.id:
         transaction.on_commit(
             lambda: post_liked.send(
@@ -232,6 +249,7 @@ def apply_offline_write(*, user, op: str, record_id, data: dict) -> None:
             poll_options=parse_json_list(data.get("poll_options")),
             media_id=data.get("media_id") or None,
             tags=data.get("tags"),
+            hub_id=data.get("hub_id") or None,
         )
         return
     post = Post.objects.alive().filter(id=record_id).first()

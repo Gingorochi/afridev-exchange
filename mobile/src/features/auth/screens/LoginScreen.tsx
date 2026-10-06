@@ -17,10 +17,17 @@ import {
   Wordmark,
 } from '@/shared/ui';
 
-import { authApi, COUNTRIES, githubAvailable, loginWithGitHub, markOnboarded } from '../api';
+import {
+  authApi,
+  type AuthResponse,
+  COUNTRIES,
+  githubAvailable,
+  loginWithGitHub,
+  markOnboarded,
+  tokensOrChallenge,
+} from '../api';
 
 type Method = 'phone' | 'email';
-type Tokens = { access: string; refresh: string };
 
 /** Connexion : même parcours que le web (GitHub, puis téléphone ou e-mail). */
 export function LoginScreen() {
@@ -30,10 +37,15 @@ export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const done = (tokens: Tokens, created: boolean) => {
+  const done = (response: AuthResponse) => {
+    const tokens = tokensOrChallenge(response);
+    if (!tokens) {
+      router.push('/verify-2fa');
+      return;
+    }
     signIn(tokens);
     markOnboarded();
-    router.replace(created ? '/profile' : '/feed');
+    router.replace(response.created ? '/profile' : '/feed');
   };
 
   async function github() {
@@ -41,7 +53,7 @@ export function LoginScreen() {
     setLoading(true);
     try {
       const response = await loginWithGitHub();
-      if (response) done(response.tokens, response.created);
+      if (response) done(response);
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -205,7 +217,7 @@ function PhoneForm() {
   );
 }
 
-function EmailForm({ onSuccess }: { onSuccess: (tokens: Tokens, created: boolean) => void }) {
+function EmailForm({ onSuccess }: { onSuccess: (response: AuthResponse) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [form, setForm] = useState({ identifier: '', username: '', email: '', password: '' });
   const [error, setError] = useState<string | null>(null);
@@ -219,7 +231,7 @@ function EmailForm({ onSuccess }: { onSuccess: (tokens: Tokens, created: boolean
         mode === 'login'
           ? await authApi.login(form.identifier.trim(), form.password)
           : await authApi.register({ username: form.username.trim(), email: form.email.trim(), password: form.password });
-      onSuccess(response.tokens, response.created);
+      onSuccess(response);
     } catch (e) {
       setError(errorMessage(e));
     } finally {

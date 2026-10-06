@@ -8,7 +8,6 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.utils import timezone
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.exceptions import ConflictError, DomainError, NotFoundError, PermissionDeniedError
 from integrations import sms
@@ -60,13 +59,19 @@ class AccountSuspendedError(DomainError):
     status_code = 403
 
 
-def issue_tokens(user: User) -> dict:
-    """Jetons de session, pour toutes les méthodes de connexion (mot de passe, SMS, OAuth)."""
+def ensure_active(user: User) -> None:
     if not user.is_active:
         raise AccountSuspendedError("Ce compte est suspendu. Contactez la modération.")
+
+
+def issue_tokens(user: User, *, request=None) -> dict:
+    """Jetons de session, pour toutes les méthodes de connexion (mot de passe, SMS, OAuth).
+    Chaque connexion ouvre une session (appareil) révocable depuis les réglages."""
+    from .security import start_session
+
+    ensure_active(user)
     update_last_login(None, user)
-    refresh = RefreshToken.for_user(user)
-    return {"access": str(refresh.access_token), "refresh": str(refresh)}
+    return start_session(user=user, request=request)
 
 
 def _announce(user: User, *, display_name: str = "", avatar_url: str = "", github: str = ""):

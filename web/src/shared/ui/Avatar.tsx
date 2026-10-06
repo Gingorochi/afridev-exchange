@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { cn, initials } from '@/shared/lib';
 
-const PALETTE = ['bg-primary', 'bg-secondary', 'bg-tertiary', 'bg-primary-hover', 'bg-secondary-hover'];
+const PALETTE = ['bg-primary', 'bg-secondary', 'bg-tertiary', 'bg-[#7c3aed]', 'bg-[#0e7490]', 'bg-[#2563eb]'];
 
 function colorFor(seed: string) {
   let hash = 0;
@@ -20,11 +20,14 @@ export function Avatar({
   name,
   src,
   size = 40,
+  color,
   className,
 }: {
   name: string;
   src?: string | null;
   size?: number;
+  /** Couleur du fond des initiales (accent du profil) ; sinon déduite du nom. */
+  color?: string;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -35,7 +38,7 @@ export function Avatar({
         colorFor(name),
         className,
       )}
-      style={{ width: size, height: size, fontSize: Math.max(11, size * 0.38) }}
+      style={{ width: size, height: size, fontSize: Math.max(11, size * 0.38), backgroundColor: color }}
       aria-hidden
     >
       {initials(name)}

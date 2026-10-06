@@ -17,6 +17,7 @@ export const snippetKeys = {
   versions: (id: string) => ['snippets', 'mine', id, 'versions'] as const,
   public: (id: string) => ['snippets', 'public', id] as const,
   byAuthor: (authorId: string) => ['snippets', 'public', 'author', authorId] as const,
+  byHub: (hub: string) => ['snippets', 'public', 'hub', hub] as const,
 };
 
 export const LANGUAGES = [
@@ -97,6 +98,12 @@ export function useSnippetsByAuthor(authorId: string | undefined) {
   );
 }
 
+export function useSnippetsByHub(hub: string) {
+  return useInfiniteList(snippetKeys.byHub(hub), (cursor) =>
+    unwrap(api.GET('/api/snippets/public/', { params: { query: { cursor, hub } } })),
+  );
+}
+
 export function useVersions(id: string, enabled: boolean) {
   return useQuery({
     queryKey: snippetKeys.versions(id),
@@ -111,6 +118,8 @@ export interface SnippetInput {
   content: string;
   tags: string[];
   is_public: boolean;
+  /** Hub où partager le snippet une fois public (absent = inchangé). */
+  hub_id?: string | null;
 }
 
 export function useSaveSnippet() {
@@ -119,7 +128,13 @@ export function useSaveSnippet() {
     mutationFn: ({ id, input }: { id?: string; input: SnippetInput }) => {
       if (id) {
         // La visibilité se change par publier / dépublier (contrôle du Security Guard).
-        const changes = { title: input.title, language: input.language, content: input.content, tags: input.tags };
+        const changes = {
+          title: input.title,
+          language: input.language,
+          content: input.content,
+          tags: input.tags,
+          ...(input.hub_id !== undefined ? { hub_id: input.hub_id } : {}),
+        };
         return sendOrQueue(
           () => unwrap(api.PATCH('/api/snippets/{snippet_id}/', { params: { path: { snippet_id: id } }, body: changes })),
           { id, op: 'PATCH', type: 'snippets', data: { ...input }, label: `Snippet : ${input.title}` },

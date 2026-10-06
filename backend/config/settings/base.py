@@ -49,6 +49,9 @@ INSTALLED_APPS = [
     "features.notifications",
     "features.moderation",
     "features.backoffice",
+    "features.hubs",
+    "features.bookmarks",
+    "features.jobs_events",
 ]
 
 MIDDLEWARE = [
@@ -136,7 +139,9 @@ CHANNEL_LAYERS = {
 # ── API ──
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # Jetons d'accès personnels (afd_…), puis JWT liés à une session révocable.
+        "features.accounts.authentication.PersonalAccessTokenAuthentication",
+        "features.accounts.authentication.SessionJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "core.pagination.CursorPagination",
@@ -155,6 +160,8 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "ROTATE_REFRESH_TOKENS": True,
+    # Refuse le renouvellement d'une session révoquée (réglages > Sécurité & sessions).
+    "TOKEN_REFRESH_SERIALIZER": "features.accounts.api.serializers.SessionTokenRefreshSerializer",
 }
 
 SPECTACULAR_SETTINGS = {
@@ -173,6 +180,11 @@ SPECTACULAR_SETTINGS = {
         "PostKindEnum": "features.feed.models.Post.Kind",
         "MediaKindEnum": "features.media.models.MediaAsset.Kind",
         "NotificationKindEnum": "features.notifications.models.Notification.Kind",
+        "ContractTypeEnum": "features.jobs_events.models.JobOffer.Contract",
+        "EventKindEnum": "features.jobs_events.models.TechEvent.Kind",
+        "TargetTypeEnum": "features.moderation.models.Report.TargetType",
+        "BookmarkTargetTypeEnum": "features.bookmarks.api.serializers.TARGET_TYPES",
+        "PinTargetTypeEnum": "features.profiles.api.serializers.PIN_TYPES",
     },
 }
 

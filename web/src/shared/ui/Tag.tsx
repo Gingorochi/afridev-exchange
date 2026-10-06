@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { cn } from '@/shared/lib';
 
-/** Tag technique (#python), en capsule. */
+/** Tag technique (#python), façon Dev.to : discret, souligné d'un filet au survol. */
 export function Tag({
   children,
   href,
@@ -15,13 +15,13 @@ export function Tag({
   className?: string;
 }) {
   const classes = cn(
-    'inline-flex items-center rounded-full bg-container px-2.5 py-0.5 text-label-md font-medium text-ink-muted',
-    href && 'transition-colors hover:bg-primary-soft hover:text-primary-ink',
+    'inline-flex h-6 items-center rounded-md border border-transparent px-1.5 text-label-md font-medium text-ink-muted',
+    href && 'transition-colors hover:border-line hover:bg-container-low hover:text-ink',
     className,
   );
   const content = (
     <>
-      {hash ? '#' : null}
+      {hash ? <span className="mr-px text-ink-faint">#</span> : null}
       {children}
     </>
   );
@@ -48,7 +48,7 @@ export function CommunityIcon({ tag, size = 24, className }: { tag: string; size
     <span
       aria-hidden
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white uppercase',
+        'inline-flex shrink-0 items-center justify-center rounded-md font-semibold text-white uppercase',
         communityColor(tag),
         className,
       )}
@@ -74,12 +74,12 @@ export function CommunityLink({ tag, className }: { tag: string; className?: str
 type Tone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'offline';
 
 const TONES: Record<Tone, string> = {
-  neutral: 'bg-container text-ink-muted',
-  primary: 'bg-primary-soft text-primary-ink',
-  success: 'bg-secondary-soft text-on-secondary-soft',
-  warning: 'bg-tertiary-soft text-on-tertiary-soft',
-  danger: 'bg-danger-soft text-on-danger-soft',
-  offline: 'bg-container-high text-offline',
+  neutral: 'border-line bg-container-low text-ink-muted',
+  primary: 'border-primary/20 bg-primary-soft text-primary-ink',
+  success: 'border-secondary/25 bg-secondary-soft text-on-secondary-soft',
+  warning: 'border-tertiary/25 bg-tertiary-soft text-on-tertiary-soft',
+  danger: 'border-danger/20 bg-danger-soft text-on-danger-soft',
+  offline: 'border-line bg-container text-offline',
 };
 
 const DOTS: Record<Tone, string> = {
@@ -91,7 +91,7 @@ const DOTS: Record<Tone, string> = {
   offline: 'bg-offline',
 };
 
-/** Badge d'état en capsule (« Résolue », « En attente de réseau »). */
+/** Badge d'état façon shadcn/ui (« Résolue », « En attente de réseau ») : capsule à filet teinté. */
 export function StatusBadge({
   tone = 'neutral',
   dot = true,
@@ -106,7 +106,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-label-md font-semibold whitespace-nowrap',
+        'inline-flex h-6 items-center gap-1.5 rounded-full border px-2.5 text-label-md font-medium whitespace-nowrap [&_svg]:shrink-0',
         TONES[tone],
         className,
       )}
@@ -116,6 +116,9 @@ export function StatusBadge({
     </span>
   );
 }
+
+/** Alias shadcn/ui : `<Badge tone="success">`. */
+export const Badge = StatusBadge;
 
 /** Pastille numérique (notifications non lues). */
 export function CountBadge({ count, className }: { count: number; className?: string }) {

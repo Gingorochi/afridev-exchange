@@ -1,6 +1,8 @@
 """Vues minces : valident l'entrée, puis appellent services / selectors."""
 
 from django.conf import settings
+from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -9,24 +11,51 @@ from rest_framework.views import APIView
 
 from core.throttling import OTPThrottle
 
-from .. import services
+from .. import security, services
+from ..authentication import NotPersonalAccessToken
+from ..export import export_user_data
 from .serializers import (
+    AccessTokenInputSerializer,
+    AccessTokenSerializer,
     AuthResponseSerializer,
+    CreatedAccessTokenSerializer,
     LoginInputSerializer,
+    MFALoginInputSerializer,
     OAuthInputSerializer,
     OTPRequestInputSerializer,
     OTPRequestOutputSerializer,
     OTPVerifyInputSerializer,
     RegisterInputSerializer,
+    RevokedCountSerializer,
+    SessionSerializer,
+    TOTPCodeSerializer,
+    TOTPSetupSerializer,
     UserSerializer,
+    present_sessions,
+    present_token,
 )
 
 
-def _auth_response(user, *, created: bool, status_code=status.HTTP_200_OK) -> Response:
+def _auth_response(
+    request, user, *, created: bool, status_code=status.HTTP_200_OK, mfa_done: bool = False
+) -> Response:
+    if user.two_factor_enabled and not mfa_done:
+        # Mot de passe (ou SMS, OAuth) validé : reste le code de l'application d'authentification.
+        services.ensure_active(user)
+        payload = {
+            "user": None,
+            "tokens": None,
+            "created": created,
+            "mfa_required": True,
+            "mfa_token": security.mfa_challenge(user=user),
+        }
+        return Response(payload, status=status_code)
     payload = {
         "user": UserSerializer(user).data,
-        "tokens": services.issue_tokens(user),
+        "tokens": services.issue_tokens(user, request=request),
         "created": created,
+        "mfa_required": False,
+        "mfa_token": None,
     }
     return Response(payload, status=status_code)
 
@@ -39,7 +68,7 @@ class RegisterView(APIView):
         data = RegisterInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         user = services.register_user(**data.validated_data)
-        return _auth_response(user, created=True, status_code=status.HTTP_201_CREATED)
+        return _auth_response(request, user, created=True, status_code=status.HTTP_201_CREATED)
 
 
 class LoginView(APIView):
@@ -50,7 +79,7 @@ class LoginView(APIView):
         data = LoginInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         user = services.authenticate_user(**data.validated_data)
-        return _auth_response(user, created=False)
+        return _auth_response(request, user, created=False)
 
 
 class OTPRequestView(APIView):
@@ -77,7 +106,7 @@ class OTPVerifyView(APIView):
         data = OTPVerifyInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         user, created = services.login_with_phone(**data.validated_data)
-        return _auth_response(user, created=created)
+        return _auth_response(request, user, created=created)
 
 
 class OAuthLoginView(APIView):
@@ -88,10 +117,128 @@ class OAuthLoginView(APIView):
         data = OAuthInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         user, created = services.login_with_oauth(provider=provider, **data.validated_data)
-        return _auth_response(user, created=created)
+        return _auth_response(request, user, created=created)
 
 
 class MeView(APIView):
     @extend_schema(responses=UserSerializer)
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class MFALoginView(APIView):
+    """Deuxième étape de la connexion : le code à 6 chiffres de l'application."""
+
+    permission_classes = [AllowAny]
+    throttle_classes = [OTPThrottle]
+
+    @extend_schema(request=MFALoginInputSerializer, responses=AuthResponseSerializer)
+    def post(self, request):
+        data = MFALoginInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        user = security.complete_mfa(**data.validated_data)
+        return _auth_response(request, user, created=False, mfa_done=True)
+
+
+class TOTPSetupView(APIView):
+    permission_classes = [NotPersonalAccessToken]
+
+    @extend_schema(request=None, responses=TOTPSetupSerializer)
+    def post(self, request):
+        return Response(security.start_totp_setup(user=request.user))
+
+
+class TOTPEnableView(APIView):
+    permission_classes = [NotPersonalAccessToken]
+
+    @extend_schema(request=TOTPCodeSerializer, responses=UserSerializer)
+    def post(self, request):
+        data = TOTPCodeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        user = security.enable_totp(user=request.user, **data.validated_data)
+        return Response(UserSerializer(user).data)
+
+
+class TOTPDisableView(APIView):
+    permission_classes = [NotPersonalAccessToken]
+
+    @extend_schema(request=TOTPCodeSerializer, responses=UserSerializer)
+    def post(self, request):
+        data = TOTPCodeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        user = security.disable_totp(user=request.user, **data.validated_data)
+        return Response(UserSerializer(user).data)
+
+
+def _current_sid(request):
+    token = request.auth
+    return token.get("sid") if hasattr(token, "get") else None
+
+
+class SessionListView(APIView):
+    permission_classes = [NotPersonalAccessToken]
+
+    @extend_schema(responses=SessionSerializer(many=True))
+    def get(self, request):
+        sessions = security.list_sessions(user=request.user)
+        return Response(present_sessions(sessions, current_sid=_current_sid(request)))
+
+
+class SessionDetailView(APIView):
+    permission_classes = [NotPersonalAccessToken]
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, session_id):
+        security.revoke_session(user=request.user, session_id=session_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RevokeOtherSessionsView(APIView):
+    permission_classes = [NotPersonalAccessToken]
+
+    @extend_schema(request=None, responses=RevokedCountSerializer)
+    def post(self, request):
+        revoked = security.revoke_other_sessions(
+            user=request.user, current_sid=_current_sid(request)
+        )
+        return Response({"revoked": revoked})
+
+
+class AccessTokenListCreateView(APIView):
+    permission_classes = [NotPersonalAccessToken]
+
+    @extend_schema(responses=AccessTokenSerializer(many=True))
+    def get(self, request):
+        return Response([present_token(t) for t in security.list_access_tokens(user=request.user)])
+
+    @extend_schema(
+        request=AccessTokenInputSerializer, responses={201: CreatedAccessTokenSerializer}
+    )
+    def post(self, request):
+        data = AccessTokenInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        token, raw = security.create_access_token(user=request.user, **data.validated_data)
+        return Response(present_token(token, raw), status=status.HTTP_201_CREATED)
+
+
+class AccessTokenDetailView(APIView):
+    permission_classes = [NotPersonalAccessToken]
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, token_id):
+        security.revoke_access_token(user=request.user, token_id=token_id)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DataExportView(APIView):
+    """Toutes mes données en JSON (téléchargement)."""
+
+    permission_classes = [NotPersonalAccessToken]
+
+    @extend_schema(responses={(200, "application/json"): OpenApiTypes.OBJECT})
+    def get(self, request):
+        response = Response(export_user_data(user=request.user))
+        filename = f"afridev-{request.user.username}-{timezone.now():%Y-%m-%d}.json"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response["Cache-Control"] = "no-store"
+        return response

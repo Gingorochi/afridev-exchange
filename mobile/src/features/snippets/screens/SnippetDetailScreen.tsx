@@ -64,7 +64,16 @@ export function SnippetDetailScreen() {
       isPublic: s.is_public,
       reasons: reviewOf(s).risky ? reviewOf(s).reasons : [],
       author: profile
-        ? { id: profile.id, username: profile.username, display_name: profile.display_name || profile.username, avatar_url: profile.avatar_url }
+        ? {
+            id: profile.id,
+            username: profile.username,
+            display_name: profile.display_name || profile.username,
+            avatar_url: profile.avatar_url,
+            location: profile.location,
+            stack: profile.stack.slice(0, 3),
+            karma: profile.karma_score,
+            badges: profile.badges.slice(0, 2),
+          }
         : null,
     };
   }

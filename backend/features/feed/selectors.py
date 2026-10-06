@@ -10,9 +10,13 @@ from .models import PollVote, Post, PostLike
 SORTS = {"hot": "-hot", "new": "-created_at", "top": "-top"}
 
 
-def list_feed(*, kind: str | None = None, author_id=None, tag: str | None = None) -> QuerySet[Post]:
+def list_feed(
+    *, kind: str | None = None, author_id=None, tag: str | None = None, hub_id=None
+) -> QuerySet[Post]:
     """Sans ordre : la pagination applique celui du tri (SORTS)."""
     posts = Post.objects.alive()
+    if hub_id:
+        posts = posts.filter(hub_id=hub_id)
     if kind:
         posts = posts.filter(kind=kind)
     if author_id:
@@ -104,3 +108,43 @@ def communities(*, since, limit: int = 12) -> list[dict]:
     ]
     rows.sort(key=lambda row: (-(row["posts"] + row["questions"]), row["tag"]))
     return rows[:limit]
+
+
+def post_summaries(*, post_ids) -> dict:
+    """{post_id: {title, excerpt, author_id, created_at}} pour les marque-pages et le profil."""
+    rows = Post.objects.alive().filter(id__in=list(post_ids))
+    return {
+        post.id: {
+            "title": post.title or post.body[:120],
+            "excerpt": post.body[:200],
+            "author_id": post.author_id,
+            "created_at": post.created_at,
+        }
+        for post in rows
+    }
+
+
+def upvotes_received(*, author_id) -> int:
+    """Votes ↑ reçus sur ses posts encore en ligne (hors votes pour soi-même) : karma."""
+    return (
+        PostLike.objects.filter(post__author_id=author_id, post__deleted_at__isnull=True, value=1)
+        .exclude(user_id=author_id)
+        .count()
+    )
+
+
+def export_for_user(*, user_id) -> dict:
+    """Données personnelles (export RGPD)."""
+    return {
+        "posts": list(
+            Post.objects.filter(author_id=user_id).values(
+                "id", "kind", "title", "body", "tags", "hub_id", "score", "created_at", "deleted_at"
+            )
+        ),
+        "post_votes": list(
+            PostLike.objects.filter(user_id=user_id).values("post_id", "value", "created_at")
+        ),
+        "poll_votes": list(
+            PollVote.objects.filter(voter_id=user_id).values("post_id", "option", "created_at")
+        ),
+    }

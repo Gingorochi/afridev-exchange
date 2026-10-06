@@ -51,6 +51,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      additional_contexts:
+        security-guard: ./packages/validation/src/security-guard
+    # Applique les migrations en attente avant de lancer le serveur ASGI.
+    command: ["sh", "-c", "python manage.py migrate --noinput && exec daphne -b 0.0.0.0 -p 8000 config.asgi:application"]
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.dev
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-afridev}
@@ -73,6 +77,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      additional_contexts:
+        security-guard: ./packages/validation/src/security-guard
     command: ["celery", "-A", "config", "worker", "-l", "info"]
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.dev

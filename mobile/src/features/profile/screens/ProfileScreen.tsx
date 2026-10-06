@@ -18,8 +18,10 @@ import {
   Card,
   CardSkeleton,
   ErrorNotice,
+  formatCount,
   Icon,
   IconButton,
+  Reputation,
   Screen,
   ScreenHeader,
   Text,
@@ -107,6 +109,7 @@ function ProfileView({ profile, me }: { profile: PublicProfile; me?: MyProfile }
           <Text variant="small" tone="muted">
             @{profile.username}
           </Text>
+          <Reputation karma={profile.karma_score} badge={profile.badges[0]?.label} />
           {profile.stack.length ? <Text variant="bodyLg">Développeur·se {profile.stack.slice(0, 3).join(' · ')}</Text> : null}
           <View style={styles.facts}>
             {profile.location ? (
@@ -136,9 +139,14 @@ function ProfileView({ profile, me }: { profile: PublicProfile; me?: MyProfile }
             <View style={[styles.openToWork, { backgroundColor: colors.secondarySoft }]}>
               <View style={[styles.dot, { backgroundColor: colors.secondary }]} />
               <Text variant="label" tone="secondary">
-                Ouvert aux opportunités
+                Open to Work{profile.daily_rate ? ` · ${profile.daily_rate}` : ''}
               </Text>
             </View>
+          ) : null}
+          {profile.open_to_work && profile.availability_note ? (
+            <Text variant="small" tone="muted">
+              {profile.availability_note}
+            </Text>
           ) : null}
         </View>
       </View>
@@ -167,6 +175,35 @@ function ProfileView({ profile, me }: { profile: PublicProfile; me?: MyProfile }
             </View>
           </>
         ) : null}
+      </Card>
+
+      <Card style={{ gap: space.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text variant="headlineMd">Réputation</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Icon name="sparkles" size={18} tone="tertiary" />
+            <Text variant="headlineLg" tone="tertiary">
+              {formatCount(profile.karma_score)}
+            </Text>
+          </View>
+        </View>
+        <Text variant="small" tone="muted">
+          {profile.karma_details.upvotes ?? 0} votes ↑ · {profile.karma_details.accepted_answers ?? 0} réponses acceptées ·{' '}
+          {profile.karma_details.snippet_saves ?? 0} snippets enregistrés
+        </Text>
+        {profile.badges.map((badge) => (
+          <View key={badge.code} style={[styles.badge, { backgroundColor: colors.tertiarySoft }]}>
+            <Icon name="award" size={18} color={colors.onTertiarySoft} />
+            <View style={{ flex: 1 }}>
+              <Text variant="label" style={{ color: colors.onTertiarySoft }}>
+                {badge.label}
+              </Text>
+              <Text variant="small" tone="muted">
+                {badge.description}
+              </Text>
+            </View>
+          </View>
+        ))}
       </Card>
 
       <ProfileActivity userId={profile.id} />
@@ -255,6 +292,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, marginVertical: 6 },
   facts: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 },
   fact: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: radius.lg },
   openToWork: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.lg },
   dot: { width: 8, height: 8, borderRadius: 4 },
   skill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: radius.full, borderWidth: 1 },

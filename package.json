@@ -12,6 +12,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:backend": "cd backend && pytest",
     "generate:api": "pnpm --filter @afridev/api-client generate"
   },
   "devDependencies": {

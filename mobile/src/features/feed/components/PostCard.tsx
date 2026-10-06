@@ -95,7 +95,8 @@ export const PostCard = memo(function PostCard({ post, detail = false }: { post:
         ) : null}
       </View>
 
-      {post.body ? (
+      {post.title ? <Text variant="headlineMd">{post.title}</Text> : null}
+      {post.body && !(post.kind === 'poll' && post.title) ? (
         post.kind === 'poll' ? (
           <Text variant="headlineMd">{post.body}</Text>
         ) : (

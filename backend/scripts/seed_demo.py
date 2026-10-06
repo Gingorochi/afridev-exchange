@@ -123,17 +123,73 @@ def _reports(amina, kofi, fatou):
     )
 
 
+# Fil façon Reddit : (auteur, communauté + tags, titre, corps, votes ↑ par…, votes ↓ par…).
+POSTS = [
+    (
+        "amina",
+        ["django", "orange-money"],
+        "Retour d'expérience : 6 mois d'Orange Money en production avec Django",
+        "Ce qui a marché : file Celery pour les callbacks, idempotence sur l'ID de transaction, "
+        "et un tableau de réconciliation quotidien.\n\nCe qui a coûté cher : les timeouts de "
+        "l'API en heure de pointe. Prévoyez des relances avec backoff.",
+        ["kofi", "fatou"],
+        [],
+    ),
+    (
+        "fatou",
+        ["flutter", "offline-first"],
+        "Mon appli Flutter tient 3 jours sans réseau : voici l'architecture",
+        "SQLite local + une table d'outbox. Chaque écriture part dans l'outbox, un worker la "
+        "vide dès que le réseau revient. Les conflits se règlent au timestamp serveur.",
+        ["amina"],
+        [],
+    ),
+    (
+        "kofi",
+        ["ussd", "python"],
+        "Quelqu'un a déjà monté un menu USSD avec Africa's Talking ?",
+        "Je cherche un exemple propre de gestion de session (les réponses arrivent en "
+        "texte concaténé `1*2*3`). Vous stockez l'état où ?",
+        [],
+        ["amina"],
+    ),
+]
+
+
+def _reddit_feed(people):
+    """Posts titrés et votés ; complète aussi les titres des posts de démo plus anciens."""
+    olds = {
+        "Astuce du jour : rendez vos webhooks Wave": "Rendez vos webhooks Wave idempotents "
+        "(une ligne de Redis)",
+    }
+    for post in feed_selectors.list_feed():
+        for start, title in olds.items():
+            if not post.title and post.body.startswith(start):
+                feed.update_post(post=post, user=post.author, title=title)
+    for author, tags, title, body, ups, downs in POSTS:
+        if feed_selectors.list_feed().filter(title=title).exists():
+            continue
+        post = feed.create_post(author=people[author], title=title, body=body, tags=tags)
+        for username in ups:
+            feed.set_vote(post=post, user=people[username], value=1)
+        for username in downs:
+            feed.set_vote(post=post, user=people[username], value=-1)
+
+
 @transaction.atomic
 def run():
     amina, kofi, fatou = (_user(*person) for person in PEOPLE)
+    people = {"amina": amina, "kofi": kofi, "fatou": fatou}
     _team()
     if feed_selectors.list_feed(author_id=kofi.id).exists():
         _reports(amina, kofi, fatou)
-        print("Données de démonstration déjà présentes (équipe et signalements à jour).")
+        _reddit_feed(people)
+        print("Données de démonstration déjà présentes (équipe, signalements et fil à jour).")
         return
 
     post = feed.create_post(
         author=kofi,
+        title="Rendez vos webhooks Wave idempotents (une ligne de Redis)",
         body="Astuce du jour : rendez vos webhooks Wave idempotents.\n\n```python\n"
         'await r.set(f"wave:{event_id}", 1, nx=True, ex=86400)\n```\n'
         "Un `SET NX` avec expiration suffit à ignorer les doublons.",
@@ -145,7 +201,7 @@ def run():
     poll = feed.create_post(
         author=fatou,
         kind="poll",
-        body="Quel framework pour une API mobile money ?",
+        title="Quel framework pour une API mobile money ?",
         poll_options=["Django", "Laravel", "FastAPI"],
     )
     feed.vote_poll(post=poll, user=amina, option=0)
@@ -204,4 +260,5 @@ def run():
         tags=["flutter", "sqlite", "offline-first"],
     )
     _reports(amina, kofi, fatou)
+    _reddit_feed(people)
     print("Données de démonstration créées. Mot de passe des comptes :", PASSWORD)

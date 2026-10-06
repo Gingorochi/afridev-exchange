@@ -11,6 +11,7 @@ from ..models import Post
 class PostInputSerializer(serializers.Serializer):
     id = serializers.UUIDField(required=False, help_text="UUID généré hors ligne par le client.")
     kind = serializers.ChoiceField(choices=Post.Kind.choices, default=Post.Kind.TEXT)
+    title = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     body = serializers.CharField(max_length=3000, required=False, allow_blank=True, default="")
     poll_options = serializers.ListField(
         child=serializers.CharField(max_length=80), required=False, max_length=4
@@ -20,24 +21,28 @@ class PostInputSerializer(serializers.Serializer):
 
 
 class PostUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=200, required=False, allow_blank=True)
     body = serializers.CharField(max_length=3000, required=False, allow_blank=True)
     tags = serializers.ListField(child=serializers.CharField(max_length=30), required=False)
 
 
 class ViewerStateSerializer(serializers.Serializer):
-    liked = serializers.BooleanField()
-    vote = serializers.IntegerField(allow_null=True)
+    post_vote = serializers.IntegerField(help_text="Vote du membre sur le post : -1, 0 ou 1.")
+    liked = serializers.BooleanField(help_text="Obsolète : équivaut à post_vote == 1.")
+    vote = serializers.IntegerField(allow_null=True, help_text="Choix du sondage.")
 
 
 class PostOutputSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     kind = serializers.ChoiceField(choices=Post.Kind.choices)
+    title = serializers.CharField()
     body = serializers.CharField()
     poll_options = serializers.ListField(child=serializers.CharField())
     poll_results = serializers.ListField(child=serializers.IntegerField(), allow_null=True)
     media_id = serializers.UUIDField(allow_null=True)
     media = serializers.JSONField(allow_null=True)
     tags = serializers.ListField(child=serializers.CharField())
+    score = serializers.IntegerField()
     like_count = serializers.IntegerField()
     comment_count = serializers.IntegerField()
     author = AuthorSerializer(allow_null=True)
@@ -54,6 +59,10 @@ class LikeInputSerializer(serializers.Serializer):
     liked = serializers.BooleanField()
 
 
+class VoteInputSerializer(serializers.Serializer):
+    value = serializers.ChoiceField(choices=[-1, 0, 1], help_text="1 = ↑, -1 = ↓, 0 = retrait.")
+
+
 def present_posts(posts, *, viewer) -> list[dict]:
     """Assemble auteurs, médias et résultats de sondage en un minimum de requêtes."""
     posts = list(posts)
@@ -67,6 +76,7 @@ def present_posts(posts, *, viewer) -> list[dict]:
         {
             "id": post.id,
             "kind": post.kind,
+            "title": post.title,
             "body": post.body,
             "poll_options": post.poll_options,
             "poll_results": (
@@ -77,6 +87,7 @@ def present_posts(posts, *, viewer) -> list[dict]:
             "media_id": post.media_id,
             "media": media.get(post.media_id),
             "tags": post.tags,
+            "score": post.score,
             "like_count": post.like_count,
             "comment_count": post.comment_count,
             "author": authors.get(post.author_id),

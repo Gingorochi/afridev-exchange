@@ -21,7 +21,7 @@ export function PublishMenu({ compact = false, className }: { compact?: boolean;
       const typing = target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
       if (!typing && !event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === 'n') {
         event.preventDefault();
-        router.push('/feed?compose=1');
+        router.push('/submit');
       }
     };
     window.addEventListener('keydown', onKey);

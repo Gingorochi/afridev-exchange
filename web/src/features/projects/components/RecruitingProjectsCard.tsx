@@ -1,9 +1,8 @@
 'use client';
 
-import { HeartHandshake } from 'lucide-react';
 import Link from 'next/link';
 
-import { Card, Skeleton } from '@/shared/ui';
+import { SideCard, Skeleton } from '@/shared/ui';
 
 import { useProjects } from '../api';
 
@@ -12,10 +11,7 @@ export function RecruitingProjectsCard() {
   const projects = useProjects({ recruiting: true });
   const items = projects.items.slice(0, 3);
   return (
-    <Card className="overflow-hidden">
-      <h2 className="flex items-center gap-2 px-4 pt-4 pb-2 text-label-md font-bold tracking-wide text-ink-muted uppercase">
-        <HeartHandshake className="size-4 text-secondary" aria-hidden /> Projets qui recrutent
-      </h2>
+    <SideCard title="Projets qui recrutent">
       {projects.isPending ? (
         <div className="px-4 pb-4">
           <Skeleton className="h-20" />
@@ -24,7 +20,7 @@ export function RecruitingProjectsCard() {
         <ul>
           {items.map((project) => (
             <li key={project.id}>
-              <Link href={`/projects/${project.id}`} className="flex gap-3 px-4 py-2.5 transition-colors hover:bg-container-low">
+              <Link href={`/projects/${project.id}`} className="flex gap-3 px-4 py-2.5 transition-colors hover:bg-container">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary-soft text-body-md font-bold text-on-secondary-soft">
                   {project.name.slice(0, 1).toUpperCase()}
                 </span>
@@ -43,9 +39,9 @@ export function RecruitingProjectsCard() {
       ) : (
         <p className="px-4 pb-3 text-body-sm text-ink-muted">Aucun projet ne recrute pour l&apos;instant.</p>
       )}
-      <Link href="/projects" className="block border-t border-line px-4 py-3 text-body-sm font-semibold text-primary-ink hover:bg-container-low">
+      <Link href="/projects" className="block border-t border-line px-4 py-3 text-body-sm font-semibold text-primary-ink hover:bg-container">
         Voir tous les projets
       </Link>
-    </Card>
+    </SideCard>
   );
 }

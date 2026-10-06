@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle2, Clock, MessageCircle, MessagesSquare, Search, Sparkles, X } from 'lucide-react';
+import { CheckCircle2, Clock, MessageCircle, MessagesSquare, Plus, Search, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -37,6 +37,7 @@ export function QuestionsScreen({ aside }: { aside?: React.ReactNode }) {
   const query = params.get('q') ?? undefined;
   const questions = useQuestions({ q: query, tag, resolved: status === 'all' ? undefined : status === 'resolved' });
   const pending = useOutbox('questions');
+  const { isAuthenticated } = useSession();
 
   const update = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -47,43 +48,46 @@ export function QuestionsScreen({ aside }: { aside?: React.ReactNode }) {
 
   return (
     <TwoColumns aside={aside}>
-      <Card className="overflow-hidden">
-        <div className="flex items-center gap-4 bg-[linear-gradient(120deg,var(--secondary-soft),var(--primary-soft))] px-5 py-5">
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-secondary text-white">
-            <MessagesSquare className="size-7" aria-hidden />
+      {/* En-tête façon page de communauté : bannière, icône, titre et action principale. */}
+      <section>
+        <div className="h-20 rounded-2xl bg-[linear-gradient(120deg,var(--secondary)_0%,var(--secondary-hover)_50%,var(--tertiary)_100%)] sm:h-24" aria-hidden />
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-3 px-2 sm:px-4">
+          <span className="-mt-10 flex size-20 shrink-0 items-center justify-center rounded-full border-4 border-surface bg-secondary text-white">
+            <MessagesSquare className="size-9" aria-hidden />
           </span>
-          <div className="min-w-0">
-            <h1 className="text-headline-lg text-ink">Entraide & IA</h1>
-            <p className="text-body-md text-ink-muted">
-              Une première réponse de l&apos;IA en quelques secondes, puis l&apos;expertise des développeurs du continent.
-            </p>
+          <div className="min-w-0 flex-1 pb-1">
+            <h1 className="text-headline-xl text-ink">Entraide & IA</h1>
+            <p className="text-body-sm text-ink-muted">Une première réponse de l&apos;IA en quelques secondes, puis la communauté.</p>
           </div>
+          <ButtonLink href={isAuthenticated ? '/questions/new' : '/login?next=/questions/new'} className="mb-1">
+            <Plus className="size-4" aria-hidden /> Poser une question
+          </ButtonLink>
         </div>
-        <AskBar />
-      </Card>
+      </section>
 
-      <Card className="px-4">
-        <form
-          role="search"
-          onSubmit={(event) => {
-            event.preventDefault();
-            update('q', search.trim() || null);
-          }}
-          className="relative pt-3"
-        >
-          <Search className="pointer-events-none absolute top-1/2 left-3.5 mt-1.5 size-[18px] -translate-y-1/2 text-ink-faint" aria-hidden />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Rechercher un bug, un code d'erreur, une techno…"
-            aria-label="Rechercher dans les questions"
-            className="h-10 w-full rounded-full bg-container pr-4 pl-10 text-body-md text-ink placeholder:text-ink-faint focus:ring-2 focus:ring-primary/30 focus:outline-none"
-          />
-        </form>
+      <form
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          update('q', search.trim() || null);
+        }}
+        className="relative"
+      >
+        <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-ink-faint" aria-hidden />
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Rechercher un bug, un code d'erreur, une techno…"
+          aria-label="Rechercher dans les questions"
+          className="h-11 w-full rounded-full bg-container pr-4 pl-11 text-body-md text-ink placeholder:text-ink-faint focus:ring-2 focus:ring-primary/30 focus:outline-none"
+        />
+      </form>
+
+      <div>
         <div className="flex items-end justify-between gap-3">
           <Tabs<Status>
-            className="border-0"
+            className="flex-1"
             value={status}
             onChange={(value) => update('status', value === 'all' ? null : value)}
             options={[
@@ -105,7 +109,7 @@ export function QuestionsScreen({ aside }: { aside?: React.ReactNode }) {
             </button>
           ) : null}
         </div>
-      </Card>
+      </div>
 
       {pending.map((entry) => (
         <Card key={entry.id} className="flex items-start gap-3 border-dashed p-4">
@@ -133,11 +137,14 @@ export function QuestionsScreen({ aside }: { aside?: React.ReactNode }) {
           Changez de filtre ou posez votre question : l&apos;IA vous répond tout de suite.
         </EmptyState>
       ) : (
-        <div className="space-y-3">
-          {questions.items.map((question) => (
-            <QuestionRow key={question.id} question={question} />
+        <ul className="-mt-2">
+          {questions.items.map((question, index) => (
+            <li key={question.id}>
+              {index ? <hr className="my-1 border-line" /> : null}
+              <QuestionRow question={question} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
       {questions.hasNextPage ? (
         <Button variant="ghost" className="w-full" onClick={() => questions.fetchNextPage()} loading={questions.isFetchingNextPage}>
@@ -148,30 +155,12 @@ export function QuestionsScreen({ aside }: { aside?: React.ReactNode }) {
   );
 }
 
-function AskBar() {
-  const { isAuthenticated, profile } = useSession();
-  return (
-    <div className="flex items-center gap-3 border-t border-line px-4 py-3">
-      {isAuthenticated ? <Avatar name={profile?.display_name || profile?.username || '?'} src={profile?.avatar_url} size={40} /> : null}
-      <Link
-        href={isAuthenticated ? '/questions/new' : '/login?next=/questions/new'}
-        className="flex h-11 flex-1 items-center rounded-full border border-line-strong px-5 text-body-md font-medium text-ink-muted transition-colors hover:bg-container-low"
-      >
-        Bloqué sur un bug ? Posez votre question…
-      </Link>
-      <ButtonLink href={isAuthenticated ? '/questions/new' : '/login?next=/questions/new'} className="hidden sm:inline-flex">
-        Demander
-      </ButtonLink>
-    </div>
-  );
-}
-
-/** Question dans une liste : statut et réponses, titre, extrait, communauté et tags. */
+/** Question dans une liste (bloc sans cadre, comme un post du fil) : statut, titre, extrait, tags. */
 export function QuestionRow({ question, compact = false }: { question: Question; compact?: boolean }) {
   const name = question.author?.display_name || question.author?.username || 'Membre';
   const [community, ...tags] = question.tags;
   return (
-    <article className="group relative rounded-xl border border-line bg-card px-4 py-3.5 shadow-card transition-colors hover:border-line-strong sm:px-5">
+    <article className="group relative -mx-2 rounded-2xl px-2 py-2.5 transition-colors hover:bg-container-low sm:-mx-4 sm:px-4">
       <div className="flex items-center gap-2 text-body-sm">
         {community ? (
           <span className="relative z-10 flex items-center gap-1.5 font-bold text-ink">
@@ -189,8 +178,8 @@ export function QuestionRow({ question, compact = false }: { question: Question;
         <span className="text-ink-faint" aria-hidden>•</span>
         <TimeAgo date={question.created_at} className="shrink-0 text-ink-faint" />
       </div>
-      <h3 className="mt-1.5 text-headline-md text-ink">
-        <Link href={`/questions/${question.id}`} className="after:absolute after:inset-0 group-hover:text-primary-ink">
+      <h3 className="mt-1.5 text-[1.125rem] leading-snug font-semibold text-ink">
+        <Link href={`/questions/${question.id}`} className="after:absolute after:inset-0">
           {question.title}
         </Link>
       </h3>

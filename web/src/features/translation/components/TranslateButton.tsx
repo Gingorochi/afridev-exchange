@@ -26,7 +26,7 @@ async function waitForTranslation(first: Translation): Promise<Translation> {
 }
 
 /** « Traduire » / « Vulgariser » un contenu ; le résultat est mis en cache côté serveur. */
-export function TranslateButton({ text, className }: { text: string; className?: string }) {
+export function TranslateButton({ text, className, tinted = false }: { text: string; className?: string; tinted?: boolean }) {
   const { isAuthenticated } = useSession();
   const [result, setResult] = useState<{ mode: Mode; text: string } | null>(null);
 
@@ -43,17 +43,19 @@ export function TranslateButton({ text, className }: { text: string; className?:
   });
 
   if (!isAuthenticated) return null;
+  // tinted : capsules grises de la barre d'actions d'un post (façon Reddit).
+  const action = cn(pillAction, tinted && 'bg-container text-ink hover:bg-container-high');
   return (
     // display: contents : les boutons s'insèrent dans la barre d'actions du parent, la traduction
     // occupe ensuite toute la largeur (basis-full).
     <div className={cn('contents', className)}>
-      <div className="flex items-center">
+      <div className={cn('flex items-center', tinted && 'gap-2')}>
         <button
           type="button"
           onClick={() => (result?.mode === 'translate' ? setResult(null) : mutation.mutate('translate'))}
           aria-label="Traduire"
           title="Traduire"
-          className={pillAction}
+          className={action}
         >
           <Languages className="size-4" aria-hidden />
           <span className="hidden sm:inline">{result?.mode === 'translate' ? 'Original' : 'Traduire'}</span>
@@ -63,7 +65,7 @@ export function TranslateButton({ text, className }: { text: string; className?:
           onClick={() => (result?.mode === 'simplify' ? setResult(null) : mutation.mutate('simplify'))}
           aria-label="Vulgariser"
           title="Vulgariser"
-          className={pillAction}
+          className={action}
         >
           <Lightbulb className="size-4" aria-hidden />
           <span className="hidden sm:inline">{result?.mode === 'simplify' ? 'Original' : 'Vulgariser'}</span>

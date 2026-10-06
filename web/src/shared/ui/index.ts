@@ -1,6 +1,6 @@
 export { Avatar } from './Avatar';
 export { Button, ButtonLink, buttonClasses, IconButton, pillAction, Spinner } from './Button';
-export { Card, CardHeader, Eyebrow } from './Card';
+export { Card, CardHeader, Eyebrow, SideCard } from './Card';
 export { CodeBlock, CopyButton, highlightCode } from './CodeBlock';
 export { CodeEditor } from './CodeEditor';
 export { Dialog } from './Dialog';
@@ -9,7 +9,7 @@ export { Field, FilterChips, Input, Segmented, Select, Switch, Tabs, Textarea } 
 export { Logo, LogoMark } from './Logo';
 export { Markdown } from './Markdown';
 export { MarkdownEditor } from './MarkdownEditor';
-export { Menu, MenuItem, MenuLabel, MenuSeparator } from './Menu';
+export { Menu, MenuItem, MenuLabel, MenuSeparator, useCloseMenu } from './Menu';
 export { CommunityIcon, CommunityLink, communityColor, CountBadge, StatusBadge, Tag } from './Tag';
 export { TagInput } from './TagInput';
 export { TimeAgo } from './TimeAgo';

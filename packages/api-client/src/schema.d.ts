@@ -258,7 +258,27 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * @deprecated
+         * @description Obsolète (app mobile) : préférer /vote/.
+         */
         post: operations["feed_like_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feed/{post_id}/score/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["feed_score_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1751,6 +1771,7 @@ export interface components {
             is_staff?: boolean;
         };
         PatchedPostUpdateRequest: {
+            title?: string;
             body?: string;
             tags?: string[];
         };
@@ -1801,6 +1822,8 @@ export interface components {
             /** @default text */
             kind: components["schemas"]["PostKindEnum"];
             /** @default  */
+            title: string;
+            /** @default  */
             body: string;
             poll_options?: string[];
             /** Format: uuid */
@@ -1819,6 +1842,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             kind: components["schemas"]["PostKindEnum"];
+            title: string;
             body: string;
             poll_options: string[];
             poll_results: number[] | null;
@@ -1826,6 +1850,7 @@ export interface components {
             media_id: string | null;
             media: unknown;
             tags: string[];
+            score: number;
             like_count: number;
             comment_count: number;
             author: components["schemas"]["Author"] | null;
@@ -2303,8 +2328,22 @@ export interface components {
          */
         ValueEnum: -1 | 0 | 1;
         ViewerState: {
+            /** @description Vote du membre sur le post : -1, 0 ou 1. */
+            post_vote: number;
+            /** @description Obsolète : équivaut à post_vote == 1. */
             liked: boolean;
+            /** @description Choix du sondage. */
             vote: number | null;
+        };
+        VoteInputRequest: {
+            /**
+             * @description 1 = ↑, -1 = ↓, 0 = retrait.
+             *
+             *     * `-1` - -1
+             *     * `0` - 0
+             *     * `1` - 1
+             */
+            value: components["schemas"]["ValueEnum"];
         };
     };
     responses: never;
@@ -2665,6 +2704,8 @@ export interface operations {
                 kind?: string;
                 /** @description 20 par défaut, 50 maximum */
                 page_size?: number;
+                /** @description hot = populaires (défaut), new = nouveaux, top = mieux notés */
+                sort?: "hot" | "new" | "top";
                 tag?: string;
             };
             header?: never;
@@ -2790,6 +2831,33 @@ export interface operations {
                 "application/json": components["schemas"]["LikeInputRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["LikeInputRequest"];
                 "multipart/form-data": components["schemas"]["LikeInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostOutput"];
+                };
+            };
+        };
+    };
+    feed_score_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoteInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["VoteInputRequest"];
+                "multipart/form-data": components["schemas"]["VoteInputRequest"];
             };
         };
         responses: {

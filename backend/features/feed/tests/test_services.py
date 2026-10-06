@@ -49,6 +49,28 @@ def test_likes_are_idempotent(user, other_user):
     assert services.set_like(post=post, user=other_user, liked=False).like_count == 0
 
 
+def test_votes_up_down_and_ranks(user, other_user):
+    post = services.create_post(author=user, title="Vote pour moi")
+    assert services.set_vote(post=post, user=other_user, value=1).score == 1
+    assert services.set_vote(post=post, user=user, value=1).score == 2
+    flipped = services.set_vote(post=post, user=other_user, value=-1)  # changer d'avis
+    assert (flipped.score, flipped.like_count) == (0, 1)
+    assert services.set_vote(post=post, user=other_user, value=0).score == 1
+    with pytest.raises(DomainError):
+        services.set_vote(post=post, user=user, value=3)
+
+    hot_zero, top_zero = services.ranks(score=0, created_at=post.created_at)
+    hot_ten, top_ten = services.ranks(score=10, created_at=post.created_at)
+    assert hot_ten == pytest.approx(hot_zero + 1)  # x10 de votes = +1 en « hot »
+    assert top_ten - top_zero == pytest.approx(10)
+
+
+def test_title_alone_is_enough_but_empty_post_is_refused(user):
+    assert services.create_post(author=user, title="Juste un titre").title == "Juste un titre"
+    with pytest.raises(DomainError):
+        services.create_post(author=user, title="  ", body="")
+
+
 def test_comment_count_follows_discussions(user, other_user):
     post = services.create_post(author=user, body="Discutons")
     comment = discussion_services.create_comment(author=other_user, post_id=post.id, body="Top")

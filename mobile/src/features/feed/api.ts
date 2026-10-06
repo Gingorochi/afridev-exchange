@@ -63,7 +63,8 @@ export function useCreatePost() {
   return useMutation({
     mutationFn: (input: NewPost) => {
       const id = uuid();
-      const body = { id, ...input, poll_options: input.poll_options ?? [], tags: input.tags ?? [] };
+      // Pas encore de champ titre sur mobile : le serveur l'accepte vide (le texte en tient lieu).
+      const body = { id, title: '', ...input, poll_options: input.poll_options ?? [], tags: input.tags ?? [] };
       // Un post avec média exige le réseau (le fichier doit être envoyé d'abord).
       if (input.media_id) {
         return unwrap(api.POST('/api/feed/', { body })).then((result) => ({ queued: false as const, result }));
@@ -92,7 +93,7 @@ export function useLike(post: Post) {
       replacePost(queryClient, {
         ...post,
         like_count: Math.max(0, post.like_count + (liked ? 1 : -1)),
-        viewer: { liked, vote: post.viewer?.vote ?? null },
+        viewer: { post_vote: liked ? 1 : 0, liked, vote: post.viewer?.vote ?? null },
       });
     },
     onSuccess: (updated) => replacePost(queryClient, updated),

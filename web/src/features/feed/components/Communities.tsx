@@ -1,12 +1,13 @@
 'use client';
 
-import { Flame } from 'lucide-react';
+import { MessagesSquare, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { cn, formatCount } from '@/shared/lib';
-import { Card, CommunityIcon, Skeleton } from '@/shared/ui';
+import { useSession } from '@/shared/session';
+import { CommunityIcon, SideCard, Skeleton } from '@/shared/ui';
 
 import { useCommunities } from '../api';
 
@@ -55,27 +56,23 @@ function CommunityNavList() {
   );
 }
 
-/** Carte « Communautés populaires » de la colonne de droite. */
+/** « Communautés populaires » de la colonne de droite, comme sur Reddit. */
 export function PopularCommunitiesCard() {
   const communities = useCommunities(6);
   return (
-    <Card className="overflow-hidden">
-      <h2 className="flex items-center gap-2 px-4 pt-4 pb-2 text-label-md font-bold tracking-wide text-ink-muted uppercase">
-        <Flame className="size-4 text-primary" aria-hidden /> Communautés populaires
-      </h2>
+    <SideCard title="Communautés populaires">
       {communities.isPending ? (
         <div className="px-4 pb-4">
           <Skeleton className="h-28" />
         </div>
       ) : communities.data?.length ? (
         <ol className="pb-2">
-          {communities.data.map((community, index) => (
+          {communities.data.map((community) => (
             <li key={community.tag}>
               <Link
                 href={`/feed?tag=${encodeURIComponent(community.tag)}`}
-                className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-container-low"
+                className="flex items-center gap-3 px-4 py-2 transition-colors hover:bg-container"
               >
-                <span className="w-4 text-body-sm font-semibold text-ink-faint tabular-nums">{index + 1}</span>
                 <CommunityIcon tag={community.tag} size={32} />
                 <span className="min-w-0">
                   <span className="block truncate text-body-md font-semibold text-ink">d/{community.tag}</span>
@@ -88,32 +85,46 @@ export function PopularCommunitiesCard() {
       ) : (
         <p className="px-4 pb-4 text-body-sm text-ink-muted">Ajoutez des tags à vos publications pour faire naître des communautés.</p>
       )}
-    </Card>
+    </SideCard>
   );
 }
 
-/** Bandeau d'une communauté (fil filtré par tag), façon page de subreddit. */
+/** En-tête d'une communauté (fil filtré par tag), comme la page d'un subreddit. */
 export function CommunityHeader({ tag }: { tag: string }) {
   const communities = useCommunities(50);
+  const { isAuthenticated } = useSession();
   const stats = communities.data?.find((community) => community.tag === tag);
   return (
-    <Card className="overflow-hidden">
-      <div className="h-20 bg-[linear-gradient(120deg,var(--primary)_0%,var(--tertiary)_55%,var(--secondary)_100%)] sm:h-24" aria-hidden />
-      <div className="flex flex-wrap items-end gap-4 px-4 pb-4">
-        <CommunityIcon tag={tag} size={72} className="-mt-8 border-4 border-card text-[1.75rem]" />
+    <section>
+      <div
+        className="h-20 rounded-2xl bg-[linear-gradient(120deg,var(--primary)_0%,var(--tertiary)_55%,var(--secondary)_100%)] sm:h-28"
+        aria-hidden
+      />
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-3 px-2 sm:px-4">
+        <CommunityIcon tag={tag} size={88} className="-mt-10 border-4 border-surface text-[2.25rem] sm:-mt-12" />
         <div className="min-w-0 flex-1 pb-1">
-          <h1 className="text-headline-lg text-ink">d/{tag}</h1>
+          <h1 className="text-headline-xl text-ink">d/{tag}</h1>
           <p className="text-body-sm text-ink-muted">
             {stats ? `${activity(stats.posts, stats.questions)} ces 90 derniers jours` : 'Communauté AfriDev'}
           </p>
         </div>
-        <Link
-          href={`/questions?tag=${encodeURIComponent(tag)}`}
-          className="mb-1 inline-flex h-9 items-center rounded-full border border-line-strong px-4 text-body-sm font-semibold text-ink hover:bg-container"
-        >
-          Questions de d/{tag}
-        </Link>
+        <div className="flex gap-2 pb-1">
+          <Link
+            href={`/questions?tag=${encodeURIComponent(tag)}`}
+            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line-strong px-4 text-body-sm font-semibold text-ink hover:bg-container"
+          >
+            <MessagesSquare className="size-4" aria-hidden /> Questions
+          </Link>
+          {isAuthenticated ? (
+            <Link
+              href={`/submit?tag=${encodeURIComponent(tag)}`}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
+            >
+              <Plus className="size-4" aria-hidden /> Créer un post
+            </Link>
+          ) : null}
+        </div>
       </div>
-    </Card>
+    </section>
   );
 }

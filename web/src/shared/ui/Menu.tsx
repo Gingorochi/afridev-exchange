@@ -7,6 +7,9 @@ import { cn } from '@/shared/lib';
 
 const CloseContext = createContext<() => void>(() => {});
 
+/** Ferme le menu qui contient l'appelant (contenu sur mesure : recherche, choix…). */
+export const useCloseMenu = () => useContext(CloseContext);
+
 /**
  * Menu déroulant (compte, « … » d'un post) : se ferme au clic extérieur, avec Échap
  * ou après un choix. Le contenu n'est rendu qu'à l'ouverture.

@@ -12,7 +12,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getPost((await params).id);
   if (!post) return { title: 'Post' };
   const author = post.author?.display_name ?? 'Un membre';
-  return { title: `${author} sur AfriDev`, description: post.body.slice(0, 160) };
+  return {
+    title: post.title || `${author} sur AfriDev`,
+    description: (post.title ? post.body : post.body.slice(0, 160)).slice(0, 160) || undefined,
+  };
 }
 
 export default async function PostPage({ params }: Props) {

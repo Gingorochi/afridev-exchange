@@ -9,11 +9,14 @@ import { type Page, useInfiniteList } from '@/shared/query';
 
 export type Post = Schemas['PostOutput'];
 export type PostKind = Schemas['PostKindEnum'];
+/** Tri du fil : populaires (défaut), nouveaux, mieux notés. */
+export type FeedSort = 'hot' | 'new' | 'top';
 
 export interface FeedFilters {
   kind?: PostKind;
   author?: string;
   tag?: string;
+  sort?: FeedSort;
 }
 
 export const feedKeys = {
@@ -54,6 +57,7 @@ function replacePost(queryClient: QueryClient, post: Post) {
 
 export interface NewPost {
   kind: PostKind;
+  title: string;
   body: string;
   poll_options?: string[];
   media_id?: string | null;
@@ -74,8 +78,15 @@ export function useCreatePost() {
         id,
         op: 'PUT',
         type: 'posts',
-        data: { kind: input.kind, body: input.body, poll_options: body.poll_options, media_id: null, tags: body.tags },
-        label: `Post : ${input.body.slice(0, 40)}`,
+        data: {
+          kind: input.kind,
+          title: input.title,
+          body: input.body,
+          poll_options: body.poll_options,
+          media_id: null,
+          tags: body.tags,
+        },
+        label: `Post : ${(input.title || input.body).slice(0, 40)}`,
       });
     },
     onSuccess: (outcome) => {
@@ -84,17 +95,19 @@ export function useCreatePost() {
   });
 }
 
-export function useLike(post: Post) {
+/** Vote ↑ (1), ↓ (-1) ou retrait (0) ; recliquer sur la même flèche retire le vote. */
+export function useScoreVote(post: Post) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (liked: boolean) =>
-      unwrap(api.POST('/api/feed/{post_id}/like/', { params: { path: { post_id: post.id } }, body: { liked } })),
-    onMutate: (liked) => {
+    mutationFn: (value: -1 | 0 | 1) =>
+      unwrap(api.POST('/api/feed/{post_id}/score/', { params: { path: { post_id: post.id } }, body: { value } })),
+    onMutate: (value) => {
       // Affichage immédiat, corrigé par la réponse du serveur.
+      const previous = post.viewer?.post_vote ?? 0;
       replacePost(queryClient, {
         ...post,
-        like_count: Math.max(0, post.like_count + (liked ? 1 : -1)),
-        viewer: { liked, vote: post.viewer?.vote ?? null },
+        score: (post.score ?? post.like_count ?? 0) - previous + value,
+        viewer: { post_vote: value, liked: value === 1, vote: post.viewer?.vote ?? null },
       });
     },
     onSuccess: (updated) => replacePost(queryClient, updated),

@@ -21,6 +21,7 @@ from .serializers import (
     PostInputSerializer,
     PostOutputSerializer,
     PostUpdateSerializer,
+    VoteInputSerializer,
     present_posts,
 )
 
@@ -45,6 +46,13 @@ class FeedView(APIView):
             OpenApiParameter("kind", str, required=False),
             OpenApiParameter("author", str, required=False, description="UUID de l'auteur"),
             OpenApiParameter("tag", str, required=False),
+            OpenApiParameter(
+                "sort",
+                str,
+                required=False,
+                enum=list(selectors.SORTS),
+                description="hot = populaires (défaut), new = nouveaux, top = mieux notés",
+            ),
         ],
         responses=paginated(PostOutputSerializer),
         operation_id="feed_list",
@@ -56,6 +64,7 @@ class FeedView(APIView):
             tag=request.query_params.get("tag"),
         )
         paginator = CursorPagination()
+        paginator.ordering = selectors.SORTS.get(request.query_params.get("sort", "hot"), "-hot")
         page = paginator.paginate_queryset(posts, request)
         return paginator.get_paginated_response(present_posts(page, viewer=request.user))
 
@@ -100,8 +109,19 @@ class PollVoteView(APIView):
         return Response(_one(post, request))
 
 
+class PostVoteView(APIView):
+    @extend_schema(request=VoteInputSerializer, responses=PostOutputSerializer)
+    def post(self, request, post_id):
+        data = VoteInputSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        post = services.set_vote(post=_get_post(post_id), user=request.user, **data.validated_data)
+        return Response(_one(post, request))
+
+
 class PostLikeView(APIView):
-    @extend_schema(request=LikeInputSerializer, responses=PostOutputSerializer)
+    """Obsolète (app mobile) : préférer /vote/."""
+
+    @extend_schema(request=LikeInputSerializer, responses=PostOutputSerializer, deprecated=True)
     def post(self, request, post_id):
         data = LikeInputSerializer(data=request.data)
         data.is_valid(raise_exception=True)

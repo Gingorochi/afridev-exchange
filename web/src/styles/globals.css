@@ -6,8 +6,8 @@
 /* ── Jetons de couleur (DESIGN.md) ── */
 :root {
   color-scheme: light;
-  /* Fond gris chaud + cartes blanches : les blocs se détachent (lisibilité type LinkedIn). */
-  --surface: #f3f1ed;
+  /* Fond blanc façon Reddit : le fil se lit d'un bloc, les posts sont séparés par des filets. */
+  --surface: #ffffff;
   --card: #ffffff;
   --container-low: #f8f6f3;
   --container: #f0ede9;
@@ -36,6 +36,10 @@
   --tertiary: #b45309;
   --tertiary-soft: #ffe7d6;
   --on-tertiary-soft: #763300;
+
+  /* Vote ↓ (le ↑ prend la terre cuite, comme l'orange de Reddit). */
+  --downvote: #6a5cff;
+  --downvote-soft: #e8e5ff;
 
   --danger: #ba1a1a;
   --danger-soft: #ffdad6;
@@ -89,6 +93,9 @@
   --tertiary-soft: #3a2412;
   --on-tertiary-soft: #ffb68e;
 
+  --downvote: #8b80ff;
+  --downvote-soft: #221f45;
+
   --danger: #ff6b5e;
   --danger-soft: #3b1414;
   --on-danger-soft: #ffb4ab;
@@ -122,6 +129,8 @@
   --color-tertiary: var(--tertiary);
   --color-tertiary-soft: var(--tertiary-soft);
   --color-on-tertiary-soft: var(--on-tertiary-soft);
+  --color-downvote: var(--downvote);
+  --color-downvote-soft: var(--downvote-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-on-danger-soft: var(--on-danger-soft);

@@ -2,9 +2,34 @@ import type { ComponentProps } from 'react';
 
 import { cn } from '@/shared/lib';
 
-/** Carte blanche sur fond gris chaud : bordure fine, coins de 12 px, ombre très légère. */
+/** Carte encadrée (formulaires, blocs de contenu) : bordure fine, coins de 16 px. */
 export function Card({ className, ...props }: ComponentProps<'div'>) {
-  return <div className={cn('rounded-xl border border-line bg-card shadow-card', className)} {...props} />;
+  return <div className={cn('rounded-2xl border border-line bg-card', className)} {...props} />;
+}
+
+/** Carte de la colonne de droite, façon Reddit : fond gris léger, sans bordure, titre discret. */
+export function SideCard({
+  title,
+  action,
+  children,
+  className,
+}: {
+  title?: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={cn('overflow-hidden rounded-2xl bg-container-low', className)}>
+      {title ? (
+        <div className="flex items-center justify-between gap-2 px-4 pt-4 pb-2">
+          <h2 className="text-label-md font-bold tracking-wide text-ink-muted uppercase">{title}</h2>
+          {action}
+        </div>
+      ) : null}
+      {children}
+    </section>
+  );
 }
 
 export function CardHeader({

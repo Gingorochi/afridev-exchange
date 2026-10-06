@@ -44,7 +44,7 @@ export function CommentThread({ postId, commentCount }: { postId: string; commen
   return (
     <section aria-label="Commentaires" className="space-y-5">
       {isAuthenticated ? (
-        <CommentForm postId={postId} placeholder="Ajouter un commentaire… (Markdown et `code` acceptés)" />
+        <CommentForm postId={postId} placeholder="Ajouter un commentaire…" />
       ) : (
         <p className="rounded-xl bg-container-low p-4 text-body-md text-ink-muted">
           <Link href="/login" className="font-semibold text-primary-ink hover:underline">

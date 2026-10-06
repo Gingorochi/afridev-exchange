@@ -16,7 +16,7 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 export const PUBLISH_ITEMS = [
-  { href: '/feed?compose=1', label: 'Une publication', hint: 'Astuce, code, sondage, image, vidéo' },
+  { href: '/submit', label: 'Un post', hint: 'Astuce, code, sondage, image, vidéo' },
   { href: '/questions/new', label: 'Une question', hint: "Première réponse de l'IA en quelques secondes" },
   { href: '/snippets/new', label: 'Un snippet', hint: 'Dans votre coffre, disponible hors ligne' },
   { href: '/projects/new', label: 'Un projet open source', hint: 'Trouvez des contributeurs' },

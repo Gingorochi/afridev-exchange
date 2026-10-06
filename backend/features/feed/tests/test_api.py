@@ -25,10 +25,38 @@ def test_poll_vote_and_like_through_api(auth_client, client_for, other_user):
     other = client_for(other_user)
     voted = other.post(f"/api/feed/{poll['id']}/vote/", {"option": 1}, format="json")
     assert voted.data["poll_results"] == [0, 1]
-    assert voted.data["viewer"] == {"liked": False, "vote": 1}
+    assert voted.data["viewer"] == {"post_vote": 0, "liked": False, "vote": 1}
 
+    # Ancienne API « j'aime » (app mobile) : un vote ↑.
     liked = other.post(f"/api/feed/{poll['id']}/like/", {"liked": True}, format="json")
-    assert liked.data["like_count"] == 1
+    assert liked.data["like_count"] == liked.data["score"] == 1
+    assert liked.data["viewer"]["post_vote"] == 1
+
+
+def test_title_score_vote_and_sorts(auth_client, client_for, other_user, user):
+    old = auth_client.post(
+        "/api/feed/", {"title": "Wave en prod", "body": "Retour d'expérience"}, format="json"
+    ).data
+    new = auth_client.post("/api/feed/", {"title": "Tout neuf"}, format="json").data
+    assert old["title"] == "Wave en prod" and old["score"] == 0
+
+    other = client_for(other_user)
+    down = other.post(f"/api/feed/{new['id']}/score/", {"value": -1}, format="json").data
+    assert down["score"] == -1 and down["viewer"]["post_vote"] == -1
+    other.post(f"/api/feed/{old['id']}/score/", {"value": 1}, format="json")
+    up = auth_client.post(f"/api/feed/{old['id']}/score/", {"value": 1}, format="json").data
+    assert up["score"] == 2
+    assert (
+        other.post(f"/api/feed/{old['id']}/score/", {"value": 2}, format="json").status_code == 400
+    )
+
+    def titles(sort):
+        return [p["title"] for p in other.get("/api/feed/", {"sort": sort}).data["results"]]
+
+    # Score 2 contre -1 : « hot » remonte l'ancien post malgré son âge (quelques ms ici).
+    assert titles("new") == ["Tout neuf", "Wave en prod"]
+    assert titles("top") == ["Wave en prod", "Tout neuf"]
+    assert titles("hot") == ["Wave en prod", "Tout neuf"]
 
 
 def test_only_author_can_delete(auth_client, client_for, other_user):

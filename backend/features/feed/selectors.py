@@ -6,8 +6,12 @@ from core.stats import count_per_day
 
 from .models import PollVote, Post, PostLike
 
+# Tri du fil → champ d'ordre (curseur) : Populaires, Nouveaux, Top.
+SORTS = {"hot": "-hot", "new": "-created_at", "top": "-top"}
+
 
 def list_feed(*, kind: str | None = None, author_id=None, tag: str | None = None) -> QuerySet[Post]:
+    """Sans ordre : la pagination applique celui du tri (SORTS)."""
     posts = Post.objects.alive()
     if kind:
         posts = posts.filter(kind=kind)
@@ -44,16 +48,26 @@ def poll_results(*, post_ids) -> dict:
 
 
 def viewer_state(*, post_ids, user) -> dict:
-    """{post_id: {"liked": bool, "vote": int | None}} pour l'utilisateur connecté."""
+    """{post_id: {"post_vote": -1|0|1, "liked": bool, "vote": int | None}}.
+
+    vote = choix du sondage ; post_vote = vote ↑/↓ sur le post.
+    """
     if not user or not user.is_authenticated:
         return {}
-    liked = set(
-        PostLike.objects.filter(post_id__in=post_ids, user=user).values_list("post_id", flat=True)
+    post_votes = dict(
+        PostLike.objects.filter(post_id__in=post_ids, user=user).values_list("post_id", "value")
     )
     votes = dict(
         PollVote.objects.filter(post_id__in=post_ids, voter=user).values_list("post_id", "option")
     )
-    return {pid: {"liked": pid in liked, "vote": votes.get(pid)} for pid in post_ids}
+    return {
+        pid: {
+            "post_vote": post_votes.get(pid, 0),
+            "liked": post_votes.get(pid) == 1,
+            "vote": votes.get(pid),
+        }
+        for pid in post_ids
+    }
 
 
 def post_stats(*, since) -> dict:

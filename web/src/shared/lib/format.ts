@@ -31,7 +31,8 @@ export function formatBytes(bytes: number): string {
 }
 
 export function formatCount(value: number): string {
-  return value >= 1000 ? `${(value / 1000).toLocaleString('fr', { maximumFractionDigits: 1 })}k` : String(value);
+  // Valeur absolue : un score de vote peut être négatif (-1,2k).
+  return Math.abs(value) >= 1000 ? `${(value / 1000).toLocaleString('fr', { maximumFractionDigits: 1 })}k` : String(value);
 }
 
 export function initials(name: string): string {

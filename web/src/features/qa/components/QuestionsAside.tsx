@@ -1,9 +1,9 @@
 'use client';
 
-import { HelpCircle, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 
-import { Card, Skeleton } from '@/shared/ui';
+import { SideCard, Skeleton } from '@/shared/ui';
 
 import { useQuestions } from '../api';
 
@@ -12,10 +12,7 @@ export function OpenQuestionsCard({ title = 'Questions sans réponse' }: { title
   const questions = useQuestions({ resolved: false });
   const items = questions.items.slice(0, 4);
   return (
-    <Card className="overflow-hidden">
-      <h2 className="flex items-center gap-2 px-4 pt-4 pb-2 text-label-md font-bold tracking-wide text-ink-muted uppercase">
-        <HelpCircle className="size-4 text-tertiary" aria-hidden /> {title}
-      </h2>
+    <SideCard title={title}>
       {questions.isPending ? (
         <div className="px-4 pb-4">
           <Skeleton className="h-16" />
@@ -24,7 +21,7 @@ export function OpenQuestionsCard({ title = 'Questions sans réponse' }: { title
         <ul>
           {items.map((question) => (
             <li key={question.id}>
-              <Link href={`/questions/${question.id}`} className="block px-4 py-2.5 transition-colors hover:bg-container-low">
+              <Link href={`/questions/${question.id}`} className="block px-4 py-2.5 transition-colors hover:bg-container">
                 <span className="line-clamp-2 text-body-sm font-semibold text-ink">{question.title}</span>
                 <span className="mt-0.5 flex items-center gap-1.5 text-label-md text-ink-muted">
                   <MessageCircle className="size-3.5" aria-hidden />
@@ -38,9 +35,9 @@ export function OpenQuestionsCard({ title = 'Questions sans réponse' }: { title
       ) : (
         <p className="px-4 pb-4 text-body-sm text-ink-muted">Toutes les questions ont une réponse acceptée. Bravo !</p>
       )}
-      <Link href="/questions/new" className="block border-t border-line px-4 py-3 text-body-sm font-semibold text-primary-ink hover:bg-container-low">
+      <Link href="/questions/new" className="block border-t border-line px-4 py-3 text-body-sm font-semibold text-primary-ink hover:bg-container">
         Poser une question
       </Link>
-    </Card>
+    </SideCard>
   );
 }

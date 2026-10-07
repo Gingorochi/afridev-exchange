@@ -14,10 +14,11 @@ from core.permissions import ReadOnlyOrAuthenticated
 from core.schema import CURSOR_PARAMETERS, paginated
 from features.hubs import selectors as hub_selectors
 
-from .. import selectors, services
+from .. import news, selectors, services
 from .serializers import (
     CommunitySerializer,
     LikeInputSerializer,
+    NewsItemSerializer,
     PollVoteInputSerializer,
     PostInputSerializer,
     PostOutputSerializer,
@@ -155,6 +156,31 @@ class CommunitiesView(APIView):
         return Response(
             CommunitySerializer(selectors.communities(since=since, limit=limit), many=True).data
         )
+
+
+class TechNewsView(APIView):
+    """Actu tech externe (Hacker News, DEV.to, médias RSS), la plus récente d'abord."""
+
+    permission_classes = [ReadOnlyOrAuthenticated]
+
+    @extend_schema(
+        operation_id="feed_news",
+        parameters=[
+            OpenApiParameter("source", str, required=False, enum=list(news.SOURCES)),
+            OpenApiParameter(
+                "lang", str, required=False, enum=["fr", "en"], description="Langue des médias"
+            ),
+            OpenApiParameter("q", str, required=False, description="Recherche plein texte"),
+        ],
+        responses=NewsItemSerializer(many=True),
+    )
+    def get(self, request):
+        rows = news.tech_news(
+            source=request.query_params.get("source", "all"),
+            lang=request.query_params.get("lang", ""),
+            q=request.query_params.get("q", ""),
+        )
+        return Response(NewsItemSerializer(rows, many=True).data)
 
 
 class HubFeedView(APIView):

@@ -111,3 +111,22 @@ class CommunitySerializer(serializers.Serializer):
     tag = serializers.CharField()
     posts = serializers.IntegerField()
     questions = serializers.IntegerField()
+
+
+class NewsItemSerializer(serializers.Serializer):
+    """Article externe (Hacker News, DEV.to, média tech) : titre, extrait et lien seulement."""
+
+    id = serializers.CharField()
+    source = serializers.ChoiceField(choices=["hackernews", "devto", "rss"])
+    source_name = serializers.CharField()
+    title = serializers.CharField()
+    url = serializers.URLField()
+    excerpt = serializers.CharField(allow_blank=True)
+    author = serializers.CharField(allow_blank=True)
+    image_url = serializers.CharField(allow_blank=True)
+    lang = serializers.CharField()
+    score = serializers.IntegerField(allow_null=True)
+    comment_count = serializers.IntegerField(allow_null=True)
+    discussion_url = serializers.CharField(allow_blank=True)
+    tags = serializers.ListField(child=serializers.CharField())
+    published_at = serializers.DateTimeField(allow_null=True)

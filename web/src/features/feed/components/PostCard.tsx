@@ -56,9 +56,13 @@ export function PostCard({ post, detail = false, community: showCommunity = true
   const toast = useToast();
   const name = post.author?.display_name || post.author?.username || 'Membre';
   const mine = Boolean(user && post.author?.id === user.id);
-  const [community, ...rest] = post.tags;
+  const postTags = Array.isArray(post.tags) ? post.tags : [];
+  const [community, ...rest] = postTags;
   // Rangé dans un hub : tous les tags sont affichés ; sinon le premier tient lieu de communauté.
-  const otherTags = post.hub ? post.tags : rest;
+  const otherTags = post.hub ? postTags : rest;
+  const badgeLabel = Array.isArray(post.author?.badges) && post.author.badges.length > 0
+    ? post.author.badges[0]?.label
+    : undefined;
   const href = `/feed/${post.id}`;
   // Posts antérieurs aux titres : la première ligne du texte en tient lieu.
   const title = post.title || (post.kind === 'poll' ? post.body : '');
@@ -112,7 +116,7 @@ export function PostCard({ post, detail = false, community: showCommunity = true
                 <span className="truncate text-body-sm font-semibold text-ink">{name}</span>
               )}
               <AuthorBadges location={post.author?.location} stack={post.author?.stack} />
-              {post.author?.badges[0] ? <TechBadge label={post.author.badges[0].label} /> : null}
+              {badgeLabel ? <TechBadge label={badgeLabel} /> : null}
             </div>
             <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-label-md text-ink-faint">
               <TimeAgo date={post.created_at} className="shrink-0" />
@@ -320,15 +324,16 @@ function openOnCardClick(event: React.MouseEvent, open: () => void) {
 function Poll({ post }: { post: Post }) {
   const { isAuthenticated: canVote } = useSession();
   const vote = useVote(post);
-  const results = post.poll_results ?? post.poll_options.map(() => 0);
+  const options = Array.isArray(post.poll_options) ? post.poll_options : [];
+  const results = post.poll_results ?? options.map(() => 0);
   const total = results.reduce((sum, value) => sum + value, 0);
   const chosen = post.viewer?.vote ?? null;
-  const leader = Math.max(...results);
+  const leader = results.length > 0 ? Math.max(...results) : 0;
   const showResults = chosen !== null || !canVote;
 
   return (
     <div className="space-y-2">
-      {post.poll_options.map((option, index) => {
+      {options.map((option, index) => {
         const count = results[index] ?? 0;
         const percent = total ? Math.round((count / total) * 100) : 0;
         const selected = chosen === index;

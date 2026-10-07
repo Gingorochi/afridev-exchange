@@ -1,1 +1,1 @@
-export { PostDetailScreen as default } from '@/features/feed';
+export { PostScreen as default } from '@/features/feed';

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ChevronLeft, KeyRound } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, KeyRound, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -8,11 +8,10 @@ import { useEffect, useState } from 'react';
 import { errorMessage } from '@/shared/api';
 import { useIsClient } from '@/shared/hooks';
 import { useSession } from '@/shared/session';
-import { Button, Input } from '@/shared/ui';
+import { Button } from '@/shared/ui';
 
 import { afterLogin, authApi, pendingMfa } from '../api';
 
-/** Deuxième étape de connexion : le code à 6 chiffres de l'application d'authentification. */
 export function VerifyTwoFactorScreen() {
   const router = useRouter();
   const { signIn } = useSession();
@@ -45,56 +44,89 @@ export function VerifyTwoFactorScreen() {
   }
 
   return (
-    <div className="space-y-6">
-      <Link href="/login" className="inline-flex items-center gap-1 text-body-sm font-medium text-ink-muted hover:text-ink">
-        <ChevronLeft className="size-4" aria-hidden /> Retour
-      </Link>
-      <div className="space-y-3">
-        <span className="flex size-12 items-center justify-center rounded-xl border border-line bg-container-low text-ink-muted">
-          <KeyRound className="size-6" aria-hidden />
-        </span>
-        <h1 className="text-headline-xl text-ink">Double authentification</h1>
-        <p className="text-body-md text-ink-muted">
-          Ouvrez votre application d&apos;authentification (Google Authenticator, Aegis, 2FAS…) et saisissez le code
-          affiché pour AfriDev Exchange.
-        </p>
+    <div className="w-full">
+      <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-elev-raised">
+        <div className="border-b border-line bg-container-low/60 p-6 pb-5">
+          <Link
+            href="/login"
+            className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Retour à la connexion</span>
+          </Link>
+
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 items-center justify-center rounded-xl bg-primary-soft text-primary-ink">
+              <KeyRound className="size-6" />
+            </span>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-ink">Double Authentification (2FA)</h2>
+              <p className="text-xs text-ink-muted">Application Authenticator (Aegis, 2FAS, Google Authenticator…)</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {error && (
+            <div
+              role="alert"
+              className="flex items-start gap-3 rounded-xl border border-danger/30 bg-danger-soft p-3.5 text-xs text-on-danger-soft animate-in fade-in"
+            >
+              <AlertCircle className="size-4.5 shrink-0 text-danger mt-0.5" />
+              <div className="font-medium">{error}</div>
+            </div>
+          )}
+
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void verify(code);
+            }}
+          >
+            <div className="space-y-1.5">
+              <label htmlFor="totp" className="block text-xs font-bold text-ink text-center">
+                Saisissez le code à 6 chiffres
+              </label>
+              <input
+                id="totp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                autoFocus
+                placeholder="123 456"
+                value={code}
+                disabled={loading}
+                onChange={(event) => {
+                  const next = event.target.value.replace(/\D/g, '').slice(0, 6);
+                  setCode(next);
+                  if (next.length === 6) void verify(next);
+                }}
+                className="h-14 w-full text-center font-mono text-2xl font-bold tracking-[0.35em] rounded-xl border border-line-strong bg-card text-ink shadow-xs transition-all hover:border-ink-faint/60 focus:border-primary focus:ring-4 focus:ring-primary/12 focus:outline-none"
+              />
+              <p className="text-center text-[0.75rem] text-ink-faint">
+                Le code change toutes les 30 secondes.
+              </p>
+            </div>
+
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full h-11 text-sm font-bold shadow-md"
+              loading={loading}
+              disabled={code.length !== 6}
+            >
+              <span>Vérifier et continuer</span>
+              <ArrowRight className="size-4.5 ml-1" />
+            </Button>
+          </form>
+        </div>
+
+        <div className="border-t border-line bg-container-low/40 px-6 py-3 text-center text-xs text-ink-faint flex items-center justify-center gap-1.5">
+          <ShieldCheck className="size-3.5 text-secondary" />
+          <span>Protection de compte renforcée</span>
+        </div>
       </div>
-      <form
-        className="space-y-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void verify(code);
-        }}
-      >
-        <label htmlFor="totp" className="sr-only">
-          Code à 6 chiffres
-        </label>
-        <Input
-          id="totp"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
-          autoFocus
-          value={code}
-          disabled={loading}
-          placeholder="123 456"
-          onChange={(event) => {
-            const next = event.target.value.replace(/\D/g, '').slice(0, 6);
-            setCode(next);
-            if (next.length === 6) void verify(next);
-          }}
-          className="h-14 text-center font-mono text-headline-lg tracking-[0.4em]"
-        />
-        {error ? (
-          <p role="alert" className="text-body-sm font-medium text-danger">
-            {error}
-          </p>
-        ) : null}
-        <Button type="submit" size="lg" className="w-full" loading={loading} disabled={code.length !== 6}>
-          Valider <ArrowRight className="size-5" aria-hidden />
-        </Button>
-      </form>
-      <p className="text-body-sm text-ink-faint">Le code change toutes les 30 secondes. Ce lien de connexion expire après 5 minutes.</p>
     </div>
   );
 }

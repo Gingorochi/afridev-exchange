@@ -1,1 +1,1 @@
-export { QuestionDetailScreen as default } from '@/features/qa';
+export { QuestionScreen as default } from '@/features/qa';

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ChevronLeft, MessageSquareText, Smartphone } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, MessageSquareText, ShieldCheck, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -24,7 +24,6 @@ export function VerifyOtpScreen() {
   const router = useRouter();
   const { signIn } = useSession();
   const isClient = useIsClient();
-  // Numéro saisi à l'étape précédente (sessionStorage, lu seulement dans le navigateur).
   const phone = isClient ? pendingPhone.get() : null;
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +41,6 @@ export function VerifyOtpScreen() {
     return () => window.clearTimeout(timer);
   }, [remaining]);
 
-  /** Saisie (clavier, collage ou WebOTP) : vérification automatique au sixième chiffre. */
   function onCode(raw: string) {
     const next = raw.replace(/\D/g, '').slice(0, LENGTH);
     setCode(next);
@@ -69,7 +67,7 @@ export function VerifyOtpScreen() {
     }
   }
 
-  // WebOTP (Chrome Android) : le code reçu par SMS est rempli et vérifié automatiquement.
+  // WebOTP API (Chrome Android)
   useEffect(() => {
     if (!phone || !('OTPCredential' in window)) return;
     const controller = new AbortController();
@@ -81,7 +79,7 @@ export function VerifyOtpScreen() {
       })
       .catch(() => {});
     return () => controller.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- une écoute par numéro, pas à chaque rendu
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone]);
 
   async function resend() {
@@ -96,84 +94,117 @@ export function VerifyOtpScreen() {
   }
 
   return (
-    <div className="space-y-6">
-      <Link href="/login" className="inline-flex h-9 items-center gap-1 rounded-full pr-3 text-body-sm font-semibold text-ink-muted hover:text-ink">
-        <ChevronLeft className="size-5" aria-hidden /> Modifier le numéro
-      </Link>
+    <div className="w-full">
+      <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-elev-raised">
+        <div className="border-b border-line bg-container-low/60 p-6 pb-5">
+          <Link
+            href="/login"
+            className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink transition-colors"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Changer de numéro</span>
+          </Link>
 
-      <div className="space-y-3">
-        <span className="flex size-14 items-center justify-center rounded-full bg-secondary-soft text-on-secondary-soft">
-          <Smartphone className="size-7" aria-hidden />
-        </span>
-        <h1 className="text-headline-xl text-ink">Vérifiez votre téléphone</h1>
-        <p className="text-body-md text-ink-muted">
-          Saisissez le code à 6 chiffres envoyé par SMS au{' '}
-          <span className="font-semibold text-ink tabular-nums">{phone ? maskPhone(phone) : '…'}</span>.
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <label htmlFor="otp" className="sr-only">
-          Code reçu par SMS
-        </label>
-        {/* Un seul champ réel (collage, saisie auto du SMS) affiché comme 6 cases. */}
-        <div className="relative" onClick={() => input.current?.focus()}>
-          <input
-            ref={input}
-            id="otp"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="\d{6}"
-            maxLength={LENGTH}
-            value={code}
-            disabled={loading}
-            autoFocus
-            onChange={(event) => onCode(event.target.value)}
-            className="absolute inset-0 opacity-0"
-            aria-describedby="otp-help"
-          />
-          <div className="grid grid-cols-6 gap-2" aria-hidden>
-            {Array.from({ length: LENGTH }, (_, i) => (
-              <span
-                key={i}
-                className={cn(
-                  'flex h-14 items-center justify-center rounded-xl border-2 bg-card text-headline-lg text-ink tabular-nums transition-colors sm:h-16',
-                  i === code.length ? 'border-primary ring-4 ring-primary/15' : code[i] ? 'border-line-strong' : 'border-line',
-                )}
-              >
-                {code[i] ?? ''}
-              </span>
-            ))}
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 items-center justify-center rounded-xl bg-secondary-soft text-on-secondary-soft">
+              <Smartphone className="size-6" />
+            </span>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-ink">Code de vérification SMS</h2>
+              <p className="text-xs text-ink-muted">
+                Envoyé au <span className="font-bold text-ink tabular-nums">{phone ? maskPhone(phone) : '…'}</span>
+              </p>
+            </div>
           </div>
         </div>
-        <p id="otp-help" className="text-body-sm text-ink-faint">
-          Le code est vérifié automatiquement au sixième chiffre.
-        </p>
-        {error ? (
-          <p role="alert" className="text-body-sm font-medium text-danger">
-            {error}
-          </p>
-        ) : null}
+
+        <div className="p-6 space-y-5">
+          {error && (
+            <div
+              role="alert"
+              className="flex items-start gap-3 rounded-xl border border-danger/30 bg-danger-soft p-3.5 text-xs text-on-danger-soft animate-in fade-in"
+            >
+              <AlertCircle className="size-4.5 shrink-0 text-danger mt-0.5" />
+              <div className="font-medium">{error}</div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label htmlFor="otp" className="sr-only">
+              Code à 6 chiffres reçu par SMS
+            </label>
+            <div className="relative cursor-text" onClick={() => input.current?.focus()}>
+              <input
+                ref={input}
+                id="otp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="\d{6}"
+                maxLength={LENGTH}
+                value={code}
+                disabled={loading}
+                autoFocus
+                onChange={(event) => onCode(event.target.value)}
+                className="absolute inset-0 opacity-0 z-10 cursor-text"
+                aria-describedby="otp-help"
+              />
+              <div className="grid grid-cols-6 gap-2" aria-hidden>
+                {Array.from({ length: LENGTH }, (_, i) => (
+                  <span
+                    key={i}
+                    className={cn(
+                      'flex h-13 sm:h-15 items-center justify-center rounded-xl border-2 bg-card text-xl sm:text-2xl font-bold text-ink tabular-nums transition-all shadow-xs',
+                      i === code.length
+                        ? 'border-primary ring-4 ring-primary/15 scale-105'
+                        : code[i]
+                          ? 'border-line-strong bg-container-low/40'
+                          : 'border-line',
+                    )}
+                  >
+                    {code[i] ?? ''}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <p id="otp-help" className="text-center text-[0.75rem] text-ink-faint">
+              Validation automatique dès que le 6ᵉ chiffre est renseigné.
+            </p>
+          </div>
+
+          <Button
+            size="lg"
+            className="w-full h-11 text-sm font-bold shadow-md"
+            loading={loading}
+            disabled={code.length !== LENGTH}
+            onClick={() => verify(code)}
+          >
+            <span>Valider le code</span>
+            <ArrowRight className="size-4.5 ml-1" />
+          </Button>
+
+          <div className="flex items-center justify-center text-xs text-ink-muted pt-2 border-t border-line">
+            {remaining > 0 ? (
+              <span className="text-ink-faint">
+                Renvoyer le SMS dans <span className="font-bold text-ink tabular-nums">0:{String(remaining).padStart(2, '0')}</span>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={resend}
+                className="inline-flex items-center gap-1.5 font-bold text-primary-ink hover:underline"
+              >
+                <MessageSquareText className="size-3.5" />
+                <span>Renvoyer un nouveau code</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t border-line bg-container-low/40 px-6 py-3 text-center text-xs text-ink-faint flex items-center justify-center gap-1.5">
+          <ShieldCheck className="size-3.5 text-secondary" />
+          <span>Vérification sécurisée AfriDev</span>
+        </div>
       </div>
-
-      <Button size="lg" className="w-full" loading={loading} disabled={code.length !== LENGTH} onClick={() => verify(code)}>
-        Valider <ArrowRight className="size-5" aria-hidden />
-      </Button>
-
-      <p className="text-center text-body-sm text-ink-muted">
-        {remaining > 0 ? (
-          <>
-            Renvoyer un code dans <span className="font-semibold text-ink tabular-nums">0:{String(remaining).padStart(2, '0')}</span>
-          </>
-        ) : (
-          <>
-            Rien reçu ?{' '}
-            <button type="button" onClick={resend} className="inline-flex items-center gap-1 font-semibold text-primary-ink hover:underline">
-              <MessageSquareText className="size-4" aria-hidden /> Renvoyer le code
-            </button>
-          </>
-        )}
-      </p>
     </div>
   );
 }

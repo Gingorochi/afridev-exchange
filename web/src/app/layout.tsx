@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 import { AppProviders } from '@/shared/providers/AppProviders';
-import { preferencesScript } from '@/shared/theme';
 
 import '@/styles/globals.css';
 
@@ -40,10 +39,6 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
-      <head>
-        {/* Thème et mode « Texte seul » appliqués avant l'affichage (pas de flash). */}
-        <script dangerouslySetInnerHTML={{ __html: preferencesScript }} />
-      </head>
       <body>
         <AppProviders>{children}</AppProviders>
       </body>

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@afridev/api-client": "workspace:*",
+    "@afridev/i18n": "workspace:*",
     "@afridev/sync-schema": "workspace:*",
     "@afridev/validation": "workspace:*",
     "@journeyapps/wa-sqlite": "^1.3.0",

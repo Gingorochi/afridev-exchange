@@ -134,6 +134,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/accounts/oauth/{provider}/start/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Appli mobile : redirige vers GitHub / Google ; le retour passe par OAuthCallbackView. */
+        get: operations["accounts_oauth_start_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/accounts/oauth/providers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Fournisseurs OAuth actifs : l'appli n'affiche que les boutons utilisables. */
+        get: operations["accounts_oauth_providers_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/accounts/otp/request/": {
         parameters: {
             query?: never;
@@ -619,6 +653,23 @@ export interface paths {
         };
         /** @description Communautés actives (tags) des 90 derniers jours : menu latéral et page d'accueil. */
         get: operations["feed_communities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/feed/news/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Actu tech externe (Hacker News, DEV.to, médias RSS), la plus récente d'abord. */
+        get: operations["feed_news"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2221,6 +2272,7 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly project_id: string;
+            /** Format: int64 */
             readonly number: number;
             readonly title: string;
             /** Format: uri */
@@ -2441,6 +2493,7 @@ export interface components {
             readonly daily_rate: string;
             readonly availability_note: string;
             readonly pinned: components["schemas"]["PinnedItem"][];
+            /** Format: int64 */
             readonly karma_score: number;
             readonly karma_details: components["schemas"]["KarmaDetails"];
             readonly badges: components["schemas"]["ProfileBadge"][];
@@ -2450,6 +2503,25 @@ export interface components {
             readonly ai_bio_status: components["schemas"]["AiBioStatusEnum"];
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        /** @description Article externe (Hacker News, DEV.to, média tech) : titre, extrait et lien seulement. */
+        NewsItem: {
+            id: string;
+            source: components["schemas"]["SourceEnum"];
+            source_name: string;
+            title: string;
+            /** Format: uri */
+            url: string;
+            excerpt: string;
+            author: string;
+            image_url: string;
+            lang: string;
+            score: number | null;
+            comment_count: number | null;
+            discussion_url: string;
+            tags: string[];
+            /** Format: date-time */
+            published_at: string | null;
         };
         /**
          * @description Sérialiseur de sortie : tous les champs en lecture seule.
@@ -2494,6 +2566,9 @@ export interface components {
             code: string;
             /** Format: uri */
             redirect_uri?: string;
+        };
+        OAuthProviders: {
+            providers: components["schemas"]["ProvidersEnum"][];
         };
         OTPRequestInputRequest: {
             phone_number: string;
@@ -2869,6 +2944,13 @@ export interface components {
             tags: string[];
             stars: number;
         };
+        /**
+         * @description * `github` - github
+         *     * `google` - google
+         *     * `gitlab` - gitlab
+         * @enum {string}
+         */
+        ProvidersEnum: "github" | "google" | "gitlab";
         /** @description Forme lue par la page publique /u/<username> (cible du QR code). */
         PublicProfile: {
             /** Format: uuid */
@@ -2887,6 +2969,7 @@ export interface components {
             readonly daily_rate: string;
             readonly availability_note: string;
             readonly pinned: components["schemas"]["PinnedItem"][];
+            /** Format: int64 */
             readonly karma_score: number;
             readonly karma_details: components["schemas"]["KarmaDetails"];
             readonly badges: components["schemas"]["ProfileBadge"][];
@@ -3146,11 +3229,19 @@ export interface components {
          *     n'ont pas de champs faussement optionnels.
          */
         SnippetVersion: {
+            /** Format: int64 */
             readonly number: number;
             readonly content: string;
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `hackernews` - hackernews
+         *     * `devto` - devto
+         *     * `rss` - rss
+         * @enum {string}
+         */
+        SourceEnum: "hackernews" | "devto" | "rss";
         /**
          * @description * `snippet` - Snippet
          *     * `question` - Question résolue
@@ -3205,9 +3296,20 @@ export interface components {
          *     * `pt` - Português
          *     * `ar` - العربية
          *     * `sw` - Kiswahili
+         *     * `wo` - Wolof (Sénégal)
+         *     * `bm` - Bambara / Bamanankan (Mali)
+         *     * `dyu` - Dioula / Julakan (Côte d'Ivoire, Burkina Faso)
+         *     * `mos` - Mooré / Mòoré (Burkina Faso)
+         *     * `ha` - Hausa
+         *     * `yo` - Yorùbá (avec les tons)
+         *     * `ig` - Igbo
+         *     * `ln` - Lingala
+         *     * `rw` - Kinyarwanda
+         *     * `am` - Amharique (አማርኛ, écriture guèze)
+         *     * `zu` - isiZulu
          * @enum {string}
          */
-        TargetLanguageEnum: "fr" | "en" | "pt" | "ar" | "sw";
+        TargetLanguageEnum: "fr" | "en" | "pt" | "ar" | "sw" | "wo" | "bm" | "dyu" | "mos" | "ha" | "yo" | "ig" | "ln" | "rw" | "am" | "zu";
         /**
          * @description * `post` - Post
          *     * `comment` - Commentaire
@@ -3543,6 +3645,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+        };
+    };
+    accounts_oauth_start_retrieve: {
+        parameters: {
+            query: {
+                return_to: string;
+            };
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    accounts_oauth_providers_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthProviders"];
                 };
             };
         };
@@ -4556,6 +4699,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Community"][];
+                };
+            };
+        };
+    };
+    feed_news: {
+        parameters: {
+            query?: {
+                /** @description Langue des médias */
+                lang?: "en" | "fr";
+                /** @description Recherche plein texte */
+                q?: string;
+                source?: "all" | "devto" | "hackernews" | "rss";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewsItem"][];
                 };
             };
         };

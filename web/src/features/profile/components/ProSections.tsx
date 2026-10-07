@@ -48,7 +48,7 @@ export function BadgesCard({ profile }: { profile: PublicProfile }) {
         </h2>
         <p className="text-body-sm text-ink-muted">Décernés automatiquement par la communauté, au fil des contributions.</p>
       </div>
-      {profile.badges.length ? (
+      {profile.badges?.length ? (
         <ul className="grid gap-2 sm:grid-cols-2">
           {profile.badges.map((badge) => (
             <li key={badge.code} className="flex items-start gap-3 rounded-xl border border-line bg-container-low/60 p-3">

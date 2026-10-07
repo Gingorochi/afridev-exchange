@@ -12,11 +12,24 @@ class Translation(BaseModel):
         SIMPLIFY = "simplify", "Vulgariser"
 
     class Language(models.TextChoices):
+        """Les 16 langues de l'interface ; le libellé, précis, est donné tel quel au modèle d'IA."""
+
         FR = "fr", "Français"
         EN = "en", "English"
         PT = "pt", "Português"
         AR = "ar", "العربية"
         SW = "sw", "Kiswahili"
+        WO = "wo", "Wolof (Sénégal)"
+        BM = "bm", "Bambara / Bamanankan (Mali)"
+        DYU = "dyu", "Dioula / Julakan (Côte d'Ivoire, Burkina Faso)"
+        MOS = "mos", "Mooré / Mòoré (Burkina Faso)"
+        HA = "ha", "Hausa"
+        YO = "yo", "Yorùbá (avec les tons)"
+        IG = "ig", "Igbo"
+        LN = "ln", "Lingala"
+        RW = "rw", "Kinyarwanda"
+        AM = "am", "Amharique (አማርኛ, écriture guèze)"
+        ZU = "zu", "isiZulu"
 
     class Status(models.TextChoices):
         PENDING = "pending", "En cours"

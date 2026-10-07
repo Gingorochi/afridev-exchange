@@ -1,167 +1,168 @@
-import * as Linking from 'expo-linking';
-import { Fragment, type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Fragment } from 'react';
+import { ScrollView, StyleSheet, Text as RNText, View } from 'react-native';
 
-import { fonts, space, useTheme } from '@/shared/theme';
+import { openLink } from '@/shared/lib';
+import { mono, radius, typography, useTheme } from '@/shared/theme';
 
-import { CodeBlock } from './Code';
 import { Text } from './Text';
 
-/**
- * Markdown minimal (réponses IA, posts, guides) : titres, listes, blocs de code,
- * code en ligne, gras, italique, liens http(s) et citations [1].
- */
-
 type Block =
-  | { type: 'code'; language: string; code: string }
-  | { type: 'heading'; text: string }
-  | { type: 'list'; ordered: boolean; items: string[] }
-  | { type: 'quote'; text: string }
-  | { type: 'paragraph'; text: string };
+  | { kind: 'code'; text: string; lang: string }
+  | { kind: 'heading'; text: string }
+  | { kind: 'quote'; text: string }
+  | { kind: 'list'; items: string[]; ordered: boolean }
+  | { kind: 'paragraph'; text: string };
 
-const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s+/;
-
+/** Découpe le Markdown courant des posts : blocs de code, titres, listes, citations, paragraphes. */
 function parse(source: string): Block[] {
-  const lines = source.replace(/\r\n/g, '\n').split('\n');
   const blocks: Block[] = [];
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i] ?? '';
-    const fence = line.match(/^```\s*([\w+#.-]*)/);
+  const lines = source.replace(/\r\n/g, '\n').split('\n');
+  let index = 0;
+  while (index < lines.length) {
+    const line = lines[index] ?? '';
+    const fence = line.match(/^```\s*(\S*)/);
     if (fence) {
       const code: string[] = [];
-      i += 1;
-      while (i < lines.length && !(lines[i] ?? '').startsWith('```')) code.push(lines[i++] ?? '');
-      blocks.push({ type: 'code', language: fence[1] ?? '', code: code.join('\n') });
-      i += 1;
-    } else if (/^#{1,4}\s/.test(line)) {
-      blocks.push({ type: 'heading', text: line.replace(/^#{1,4}\s+/, '') });
-      i += 1;
-    } else if (LIST_ITEM.test(line)) {
-      const ordered = /^\s*\d/.test(line);
-      const items: string[] = [];
-      while (i < lines.length && LIST_ITEM.test(lines[i] ?? '')) items.push((lines[i++] ?? '').replace(LIST_ITEM, ''));
-      blocks.push({ type: 'list', ordered, items });
-    } else if (line.startsWith('>')) {
-      const quote: string[] = [];
-      while (i < lines.length && (lines[i] ?? '').startsWith('>')) quote.push((lines[i++] ?? '').replace(/^>\s?/, ''));
-      blocks.push({ type: 'quote', text: quote.join(' ') });
-    } else if (!line.trim()) {
-      i += 1;
-    } else {
-      const paragraph: string[] = [];
-      while (i < lines.length && (lines[i] ?? '').trim() && !/^(```|#{1,4}\s|>)/.test(lines[i] ?? '') && !LIST_ITEM.test(lines[i] ?? '')) {
-        paragraph.push(lines[i++] ?? '');
-      }
-      blocks.push({ type: 'paragraph', text: paragraph.join(' ') });
+      index += 1;
+      while (index < lines.length && !(lines[index] ?? '').startsWith('```')) code.push(lines[index++] ?? '');
+      index += 1;
+      blocks.push({ kind: 'code', text: code.join('\n'), lang: fence[1] ?? '' });
+      continue;
     }
+    if (!line.trim()) {
+      index += 1;
+      continue;
+    }
+    const heading = line.match(/^#{1,6}\s+(.*)/);
+    if (heading) {
+      blocks.push({ kind: 'heading', text: heading[1] ?? '' });
+      index += 1;
+      continue;
+    }
+    const listMatch = line.match(/^\s*([-*+]|\d+[.)])\s+/);
+    if (listMatch) {
+      const ordered = /\d/.test(listMatch[1] ?? '');
+      const items: string[] = [];
+      while (index < lines.length && /^\s*([-*+]|\d+[.)])\s+/.test(lines[index] ?? '')) {
+        items.push((lines[index] ?? '').replace(/^\s*([-*+]|\d+[.)])\s+/, ''));
+        index += 1;
+      }
+      blocks.push({ kind: 'list', items, ordered });
+      continue;
+    }
+    if (line.startsWith('>')) {
+      const quote: string[] = [];
+      while (index < lines.length && (lines[index] ?? '').startsWith('>')) quote.push((lines[index++] ?? '').replace(/^>\s?/, ''));
+      blocks.push({ kind: 'quote', text: quote.join(' ') });
+      continue;
+    }
+    const paragraph: string[] = [];
+    while (index < lines.length && (lines[index] ?? '').trim() && !/^(```|#{1,6}\s|>|\s*([-*+]|\d+[.)])\s)/.test(lines[index] ?? '')) {
+      paragraph.push(lines[index++] ?? '');
+    }
+    blocks.push({ kind: 'paragraph', text: paragraph.join('\n') });
   }
   return blocks;
 }
 
-const INLINE = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*\s][^*]*\*)|(\[[^\]]+\]\([^)\s]+\))|(\[\d+\])/g;
-
-function Inline({ text, onCite }: { text: string; onCite?: (n: number) => void }) {
+/** Gras, code en ligne et liens à l'intérieur d'un texte. */
+function Inline({ text }: { text: string }) {
   const { colors } = useTheme();
-  const nodes: ReactNode[] = [];
-  let last = 0;
-  for (const match of text.matchAll(INLINE)) {
-    const [token] = match;
-    const start = match.index ?? 0;
-    if (start > last) nodes.push(text.slice(last, start));
-    const key = `${start}`;
-    if (match[1]) {
-      nodes.push(
-        <Text key={key} style={[styles.inlineCode, { backgroundColor: colors.container, color: colors.primaryInk }]}>
-          {token.slice(1, -1)}
-        </Text>,
-      );
-    } else if (match[2]) {
-      nodes.push(
-        <Text key={key} style={{ fontFamily: fonts.bold }}>
-          {token.slice(2, -2)}
-        </Text>,
-      );
-    } else if (match[3]) {
-      nodes.push(
-        <Text key={key} style={{ fontStyle: 'italic' }}>
-          {token.slice(1, -1)}
-        </Text>,
-      );
-    } else if (match[4]) {
-      const [, label = '', href = ''] = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/) ?? [];
-      const safe = /^https?:\/\//.test(href);
-      nodes.push(
-        <Text
-          key={key}
-          tone="primary"
-          style={safe ? { textDecorationLine: 'underline' } : undefined}
-          onPress={safe ? () => void Linking.openURL(href) : undefined}
-        >
-          {label}
-        </Text>,
-      );
-    } else if (match[5]) {
-      const n = Number(token.slice(1, -1));
-      nodes.push(
-        <Text key={key} variant="mono" tone="primary" onPress={onCite ? () => onCite(n) : undefined}>
-          {token}
-        </Text>,
-      );
-    }
-    last = start + token.length;
-  }
-  if (last < text.length) nodes.push(text.slice(last));
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+]\([^)\s]+\))/g);
   return (
     <>
-      {nodes.map((node, index) => (
-        <Fragment key={index}>{node}</Fragment>
-      ))}
+      {parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+          return (
+            <RNText key={i} style={styles.bold}>
+              {part.slice(2, -2)}
+            </RNText>
+          );
+        }
+        if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+          return (
+            <RNText key={i} style={[styles.inlineCode, { backgroundColor: colors.container, color: colors.primaryInk }]}>
+              {part.slice(1, -1)}
+            </RNText>
+          );
+        }
+        const link = part.match(/^\[([^\]]+)]\(([^)\s]+)\)$/);
+        if (link) {
+          const url = link[2] ?? '';
+          return (
+            <RNText
+              key={i}
+              accessibilityRole="link"
+              onPress={() => /^https?:\/\//.test(url) && void openLink(url)}
+              style={{ color: colors.primaryInk, textDecorationLine: 'underline' }}
+            >
+              {link[1]}
+            </RNText>
+          );
+        }
+        return <Fragment key={i}>{part}</Fragment>;
+      })}
     </>
   );
 }
 
-export function Markdown({ source, onCite }: { source: string; onCite?: (n: number) => void }) {
+export function CodeBlock({ code }: { code: string }) {
   const { colors } = useTheme();
   return (
-    <View style={{ gap: space.sm }}>
-      {parse(source).map((block, index) => {
-        switch (block.type) {
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={[styles.code, { backgroundColor: colors.codeBg }]}
+      contentContainerStyle={styles.codeInner}
+    >
+      <RNText selectable style={[styles.codeText, { color: colors.codeInk }]}>
+        {code}
+      </RNText>
+    </ScrollView>
+  );
+}
+
+export function Markdown({ source }: { source: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.wrap}>
+      {parse(source).map((block, i) => {
+        switch (block.kind) {
           case 'code':
-            return <CodeBlock key={index} code={block.code} language={block.language || undefined} />;
+            return <CodeBlock key={i} code={block.text} />;
           case 'heading':
             return (
-              <Text key={index} variant="headlineMd" style={{ marginTop: 4 }}>
-                <Inline text={block.text} onCite={onCite} />
+              <Text key={i} variant="headline">
+                <Inline text={block.text} />
               </Text>
+            );
+          case 'quote':
+            return (
+              <View key={i} style={[styles.quote, { borderLeftColor: colors.lineStrong }]}>
+                <Text tone="muted">
+                  <Inline text={block.text} />
+                </Text>
+              </View>
             );
           case 'list':
             return (
-              <View key={index} style={{ gap: 4 }}>
-                {block.items.map((item, j) => (
-                  <View key={j} style={{ flexDirection: 'row', gap: 8 }}>
-                    <Text tone="primary" variant="mono">
-                      {block.ordered ? `${j + 1}.` : '•'}
+              <View key={i} style={styles.list}>
+                {block.items.map((item, n) => (
+                  <View key={n} style={styles.listItem}>
+                    <Text tone="muted" style={styles.bullet}>
+                      {block.ordered ? `${n + 1}.` : '•'}
                     </Text>
-                    <Text style={{ flex: 1 }}>
-                      <Inline text={item} onCite={onCite} />
+                    <Text style={styles.flex}>
+                      <Inline text={item} />
                     </Text>
                   </View>
                 ))}
               </View>
             );
-          case 'quote':
-            return (
-              <View key={index} style={[styles.quote, { borderLeftColor: colors.borderStrong }]}>
-                <Text tone="muted">
-                  <Inline text={block.text} onCite={onCite} />
-                </Text>
-              </View>
-            );
           default:
             return (
-              <Text key={index}>
-                <Inline text={block.text} onCite={onCite} />
+              <Text key={i} selectable>
+                <Inline text={block.text} />
               </Text>
             );
         }
@@ -171,6 +172,15 @@ export function Markdown({ source, onCite }: { source: string; onCite?: (n: numb
 }
 
 const styles = StyleSheet.create({
-  inlineCode: { fontFamily: fonts.monoRegular, fontSize: 14 },
-  quote: { borderLeftWidth: 3, paddingLeft: space.sm },
+  wrap: { gap: 12 },
+  bold: { fontWeight: '700' },
+  inlineCode: { fontFamily: mono, fontSize: 13.5 },
+  code: { borderRadius: radius.md },
+  codeInner: { padding: 14 },
+  codeText: { fontFamily: mono, fontSize: 13, lineHeight: 20 },
+  quote: { borderLeftWidth: 3, paddingLeft: 12 },
+  list: { gap: 6 },
+  listItem: { flexDirection: 'row', gap: 8 },
+  bullet: { ...typography.body, minWidth: 16 },
+  flex: { flex: 1 },
 });

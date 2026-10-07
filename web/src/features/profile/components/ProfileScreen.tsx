@@ -132,13 +132,13 @@ function ProfileView({ profile, me, welcome }: { profile: PublicProfile; me?: My
           <div className="mt-3 space-y-1">
             <h1 className="flex flex-wrap items-center gap-2 text-headline-xl text-ink">
               {name}
-              {profile.badges.slice(0, 2).map((badge) => (
+              {profile.badges?.slice(0, 2).map((badge) => (
                 <TechBadge key={badge.code} label={badge.label} className="h-6 text-label-md" />
               ))}
             </h1>
             <p className="text-body-md text-ink-muted">
               @{profile.username}
-              {profile.stack.length ? (
+              {profile.stack?.length ? (
                 <>
                   <span className="mx-2 text-ink-faint" aria-hidden>
                     /
@@ -189,10 +189,10 @@ function ProfileView({ profile, me, welcome }: { profile: PublicProfile; me?: My
         {/* Chiffres clés de la réputation. */}
         <dl className="grid grid-cols-2 border-t border-line sm:grid-cols-4" title="+5 par vote reçu, +15 par réponse acceptée, +10 par snippet enregistré">
           {[
-            { label: 'Karma', value: profile.karma_score, strong: true },
-            { label: 'Votes reçus', value: profile.karma_details.upvotes },
-            { label: 'Réponses acceptées', value: profile.karma_details.accepted_answers },
-            { label: 'Snippets enregistrés', value: profile.karma_details.snippet_saves },
+            { label: 'Karma', value: profile.karma_score ?? 0, strong: true },
+            { label: 'Votes reçus', value: profile.karma_details?.upvotes ?? 0 },
+            { label: 'Réponses acceptées', value: profile.karma_details?.accepted_answers ?? 0 },
+            { label: 'Snippets enregistrés', value: profile.karma_details?.snippet_saves ?? 0 },
           ].map((stat, index) => (
             <div
               key={stat.label}

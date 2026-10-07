@@ -7,6 +7,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { api, unwrap } from '@/shared/api';
 import { useDebounced } from '@/shared/hooks';
+import { useLang } from '@/shared/i18n';
 import { NAV_ITEMS, PUBLISH_ITEMS } from '@/shared/layout';
 import { cn } from '@/shared/lib';
 import { useSession } from '@/shared/session';
@@ -29,6 +30,7 @@ const HIT_LABELS = { snippet: 'Snippet', question: 'Question', project: 'Projet'
 export default function Palette({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const { isAuthenticated } = useSession();
+  const { t } = useLang();
   const [theme, setTheme] = useTheme();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -69,15 +71,15 @@ export default function Palette({ onClose }: { onClose: () => void }) {
     if (needle.length > 1) {
       items.push({
         id: 'search-all',
-        group: 'Recherche',
-        label: `Rechercher « ${query.trim()} » partout`,
+        group: t('search.group_search'),
+        label: `${t('shortcuts.search')} « ${query.trim()} » ${t('shortcuts.everywhere').toLowerCase()}`,
         icon: Search,
         run: go(`/search?q=${encodeURIComponent(query.trim())}`),
       });
       for (const hit of (results.data ?? []).slice(0, 6)) {
         items.push({
           id: `${hit.source_type}-${hit.source_id}`,
-          group: 'Résultats',
+          group: t('search.group_results'),
           label: hit.title,
           hint: HIT_LABELS[hit.source_type],
           icon: HIT_ICONS[hit.source_type],
@@ -86,23 +88,33 @@ export default function Palette({ onClose }: { onClose: () => void }) {
       }
     }
     for (const item of NAV_ITEMS) {
-      if (!item.soon && matches(item.label)) {
-        items.push({ id: `nav-${item.href}`, group: 'Aller à', label: item.label, icon: item.icon, run: go(item.href) });
+      const label = item.msgKey ? t(item.msgKey) : item.label;
+      if (!item.soon && (matches(item.label) || matches(label))) {
+        items.push({ id: `nav-${item.href}`, group: t('search.group_goto'), label, icon: item.icon, run: go(item.href) });
       }
     }
     if (isAuthenticated) {
       for (const item of PUBLISH_ITEMS) {
-        if (matches(`${item.label} créer publier`)) {
-          items.push({ id: `new-${item.href}`, group: 'Créer', label: `Créer ${item.label.toLowerCase()}`, hint: item.hint, icon: Plus, run: go(item.href) });
+        const itemLabel = item.msgKey ? t(item.msgKey) : item.label;
+        const itemHint = item.hintKey ? t(item.hintKey) : item.hint;
+        if (matches(`${item.label} ${itemLabel} ${t('publish.create')}`)) {
+          items.push({
+            id: `new-${item.href}`,
+            group: t('search.group_create'),
+            label: `${t('publish.create')} ${itemLabel.toLowerCase()}`,
+            hint: itemHint,
+            icon: Plus,
+            run: go(item.href),
+          });
         }
       }
     }
     const dark = theme === 'dark';
-    if (matches('thème sombre clair mode')) {
+    if (matches('thème theme sombre dark clair light mode')) {
       items.push({
         id: 'theme',
-        group: 'Préférences',
-        label: dark ? 'Passer en thème clair' : 'Passer en thème sombre',
+        group: t('search.group_preferences'),
+        label: dark ? t('nav.theme_to_light') : t('nav.theme_to_dark'),
         icon: dark ? Sun : Moon,
         run: () => {
           setTheme(dark ? 'light' : 'dark');
@@ -111,7 +123,7 @@ export default function Palette({ onClose }: { onClose: () => void }) {
       });
     }
     return items;
-  }, [query, results.data, isAuthenticated, theme, setTheme, router, onClose]);
+  }, [query, results.data, isAuthenticated, theme, setTheme, router, onClose, t]);
 
   const current = Math.min(active, Math.max(commands.length - 1, 0));
 
@@ -141,8 +153,8 @@ export default function Palette({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center px-3 pt-[12vh]" role="presentation" onKeyDown={onKeyDown}>
-      <button type="button" aria-label="Fermer la recherche" tabIndex={-1} className="absolute inset-0 bg-black/40 backdrop-blur-[3px]" onClick={onClose} />
-      <div role="dialog" aria-modal aria-label="Recherche" className="animate-pop relative w-full max-w-xl overflow-hidden rounded-xl border border-line bg-card shadow-raised">
+      <button type="button" aria-label={t('common.close')} tabIndex={-1} className="absolute inset-0 bg-black/40 backdrop-blur-[3px]" onClick={onClose} />
+      <div role="dialog" aria-modal aria-label={t('shortcuts.search')} className="animate-pop relative w-full max-w-xl overflow-hidden rounded-xl border border-line bg-card shadow-raised">
         <div className="flex h-12 items-center gap-2.5 border-b border-line px-4">
           {searching ? <Spinner className="size-4 text-ink-faint" /> : <Search className="size-4 shrink-0 text-ink-faint" aria-hidden />}
           <input
@@ -152,8 +164,8 @@ export default function Palette({ onClose }: { onClose: () => void }) {
               setQuery(event.target.value);
               setActive(0);
             }}
-            placeholder="Rechercher ou aller à…"
-            aria-label="Rechercher"
+            placeholder={t('search.palette_placeholder')}
+            aria-label={t('shortcuts.search')}
             role="combobox"
             aria-expanded
             aria-controls={listId}
@@ -194,10 +206,10 @@ export default function Palette({ onClose }: { onClose: () => void }) {
           })}
           {q.length > 1 && results.isError ? (
             <p className="flex items-center gap-2 px-2.5 py-3 text-body-sm text-ink-muted">
-              <WifiOff className="size-4" aria-hidden /> La recherche dans les contenus nécessite une connexion.
+              <WifiOff className="size-4" aria-hidden /> {t('search.offline_notice')}
             </p>
           ) : null}
-          {!commands.length ? <p className="px-2.5 py-6 text-center text-body-sm text-ink-muted">Aucun résultat.</p> : null}
+          {!commands.length ? <p className="px-2.5 py-6 text-center text-body-sm text-ink-muted">{t('search.no_results')}</p> : null}
         </div>
         <div className="hidden items-center gap-4 border-t border-line bg-container-low px-4 py-2 text-label-md text-ink-faint sm:flex">
           <span className="flex items-center gap-1.5">

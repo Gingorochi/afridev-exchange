@@ -1,1 +1,1 @@
-export { AskQuestionScreen as default } from '@/features/qa';
+export { AskScreen as default } from '@/features/qa';

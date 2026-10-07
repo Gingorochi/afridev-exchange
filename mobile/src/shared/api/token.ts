@@ -33,7 +33,11 @@ async function writeSecure(key: string, value: string | null) {
 export const tokenStore = {
   /** À appeler une fois au démarrage, avant d'afficher les écrans. */
   async hydrate() {
-    [access, refresh] = await Promise.all([readSecure(ACCESS_KEY), readSecure(REFRESH_KEY)]);
+    try {
+      [access, refresh] = await Promise.all([readSecure(ACCESS_KEY), readSecure(REFRESH_KEY)]);
+    } catch {
+      access = refresh = null; // trousseau illisible (restauration d'appareil) : nouvelle connexion
+    }
     listeners.forEach((listener) => listener());
   },
   get: () => access,

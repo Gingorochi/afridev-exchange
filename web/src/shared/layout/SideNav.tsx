@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen, Settings, ShieldCheck } from 'lucide-rea
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { useLang } from '@/shared/i18n';
 import { cn, formatBytes } from '@/shared/lib';
 import { useIsOnline, useStorageEstimate } from '@/shared/offline';
 import { useSession } from '@/shared/session';
@@ -33,6 +34,7 @@ export function SideNav({
   showShortcuts?: boolean;
 }) {
   const { user, profile } = useSession();
+  const { t } = useLang();
   const pathname = navPath(usePathname(), profile?.username);
 
   return (
@@ -43,7 +45,9 @@ export function SideNav({
             collapsed ? (
               <div className="mx-3 mb-2 h-px bg-line" aria-hidden />
             ) : (
-              <p className="mb-1 px-3 text-label-md font-medium text-ink-faint">{section.title}</p>
+              <p className="mb-1 px-3 text-label-md font-medium text-ink-faint">
+                {section.msgKey ? t(section.msgKey) : section.title}
+              </p>
             )
           ) : null}
           <ul className="space-y-0.5">
@@ -62,7 +66,7 @@ export function SideNav({
         <ul className="space-y-0.5">
           <li>
             <NavLink
-              item={{ href: '/settings', label: 'Réglages', short: 'Réglages', icon: Settings }}
+              item={{ href: '/settings', label: t('nav.settings'), short: t('nav.settings'), icon: Settings, msgKey: 'nav.settings' }}
               pathname={pathname}
               collapsed={collapsed}
             />
@@ -70,7 +74,7 @@ export function SideNav({
           {user?.is_staff ? (
             <li>
               <NavLink
-                item={{ href: '/admin', label: 'Back-office', short: 'Admin', icon: ShieldCheck }}
+                item={{ href: '/admin', label: t('nav.admin'), short: t('nav.admin'), icon: ShieldCheck, msgKey: 'nav.admin' }}
                 pathname={pathname}
                 collapsed={collapsed}
               />
@@ -94,13 +98,16 @@ function NavLink({
   collapsed: boolean;
   showShortcut?: boolean;
 }) {
+  const { t } = useLang();
   const active = isActive(pathname, item.href);
+  const label = item.msgKey ? t(item.msgKey) : item.label;
+
   return (
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
-      aria-label={collapsed ? item.label : undefined}
-      title={collapsed ? item.label : undefined}
+      aria-label={collapsed ? label : undefined}
+      title={collapsed ? label : undefined}
       className={cn(navItemClasses(active), collapsed ? 'mx-auto w-12 justify-center' : 'px-4')}
     >
       <item.icon
@@ -113,7 +120,7 @@ function NavLink({
       />
       {collapsed ? null : (
         <>
-          <span className="flex-1 truncate">{item.label}</span>
+          <span className="flex-1 truncate">{label}</span>
           {showShortcut && item.key ? (
             <span className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden>
               <Kbd>G</Kbd>

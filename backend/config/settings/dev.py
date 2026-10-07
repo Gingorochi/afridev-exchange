@@ -9,6 +9,9 @@ CORS_ALLOWED_ORIGINS = env.list(
     default=["http://localhost:3000", "http://localhost:8081"],
 )
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Derrière un tunnel (cloudflared, ngrok : `pnpm mobile:tunnel`), la requête d'origine est en
+# HTTPS : les URL absolues (retour OAuth de l'appli mobile) doivent l'être aussi.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Mode léger (DJANGO_LITE=1) : lance l'API sans Docker, PostgreSQL ni Redis.
 # SQLite, cache et temps réel en mémoire, tâches Celery exécutées immédiatement.

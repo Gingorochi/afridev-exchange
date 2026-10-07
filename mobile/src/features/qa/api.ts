@@ -1,19 +1,24 @@
-import type { Schemas } from '@afridev/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { api, unwrap, waitForJob } from '@/shared/api';
-import { type PickedFile, uploadMedia } from '@/shared/media';
-import { sendOrQueue, uuid } from '@/shared/offline';
+import { api, type Schemas, unwrap } from '@/shared/api';
+import type { Key } from '@/shared/i18n';
 import { useInfiniteList } from '@/shared/query';
 
 export type Question = Schemas['QuestionOutput'];
 export type Answer = Schemas['AnswerOutput'];
-export type SimilarQuestion = Schemas['SimilarQuestion'];
+
+export type QuestionStatus = 'all' | 'open' | 'resolved';
+
+export const STATUSES: { value: QuestionStatus; label: Key }[] = [
+  { value: 'all', label: 'qa.all' },
+  { value: 'open', label: 'qa.open' },
+  { value: 'resolved', label: 'qa.resolved' },
+];
 
 export interface QuestionFilters {
   q?: string;
-  tag?: string;
-  resolved?: boolean;
+  status?: QuestionStatus;
+  hub?: string;
   author?: string;
 }
 
@@ -22,20 +27,22 @@ export const qaKeys = {
   list: (filters: QuestionFilters) => ['qa', 'list', filters] as const,
   detail: (id: string) => ['qa', 'question', id] as const,
   answers: (id: string) => ['qa', 'question', id, 'answers'] as const,
-  similar: (text: string) => ['qa', 'similar', text] as const,
 };
 
-export function useQuestions(filters: QuestionFilters = {}) {
-  return useInfiniteList(qaKeys.list(filters), (cursor) =>
-    unwrap(api.GET('/api/qa/questions/', { params: { query: { cursor, ...filters } } })),
+export function useQuestions({ status = 'all', ...filters }: QuestionFilters = {}, options: { enabled?: boolean } = {}) {
+  const resolved = status === 'all' ? undefined : status === 'resolved';
+  return useInfiniteList(
+    qaKeys.list({ status, ...filters }),
+    (cursor) =>
+      unwrap(api.GET('/api/qa/questions/', { params: { query: { cursor, resolved, ...filters, q: filters.q || undefined } } })),
+    options,
   );
 }
 
-export function useQuestion(id: string | undefined) {
+export function useQuestion(id: string) {
   return useQuery({
-    queryKey: qaKeys.detail(id ?? ''),
-    queryFn: () => unwrap(api.GET('/api/qa/questions/{question_id}/', { params: { path: { question_id: id! } } })),
-    enabled: Boolean(id),
+    queryKey: qaKeys.detail(id),
+    queryFn: () => unwrap(api.GET('/api/qa/questions/{question_id}/', { params: { path: { question_id: id } } })),
     // La réponse IA arrive quelques secondes après la publication : on la guette.
     refetchInterval: (query) => (query.state.data?.ai_answer_status === 'pending' ? 2500 : false),
   });
@@ -44,63 +51,25 @@ export function useQuestion(id: string | undefined) {
 export function useAnswers(questionId: string) {
   return useQuery({
     queryKey: qaKeys.answers(questionId),
-    queryFn: () =>
-      unwrap(api.GET('/api/qa/questions/{question_id}/answers/', { params: { path: { question_id: questionId } } })),
+    queryFn: () => unwrap(api.GET('/api/qa/questions/{question_id}/answers/', { params: { path: { question_id: questionId } } })),
   });
 }
 
 export function useSimilarQuestions(text: string) {
   return useQuery({
-    queryKey: qaKeys.similar(text),
+    queryKey: ['qa', 'similar', text],
     queryFn: () => unwrap(api.GET('/api/qa/similar/', { params: { query: { q: text } } })),
     enabled: text.trim().length >= 15,
     staleTime: 5 * 60_000,
-    meta: { persist: false },
   });
 }
 
-export interface NewQuestion {
-  title: string;
-  body: string;
-  tags: string[];
-  audio_media_id?: string | null;
-}
-
-export function askQuestion(input: NewQuestion) {
-  const id = uuid();
-  return sendOrQueue(
-    () => unwrap(api.POST('/api/qa/questions/', { body: { id, ...input } })),
-    {
-      id,
-      op: 'PUT',
-      type: 'questions',
-      data: { title: input.title, body: input.body, tags: input.tags },
-      label: `Question : ${input.title.slice(0, 40)}`,
-    },
-  );
-}
-
-export function useCreateAnswer(questionId: string) {
+export function useAskQuestion() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: string) => {
-      const id = uuid();
-      return sendOrQueue(
-        () =>
-          unwrap(
-            api.POST('/api/qa/questions/{question_id}/answers/', {
-              params: { path: { question_id: questionId } },
-              body: { id, body },
-            }),
-          ),
-        { id, op: 'PUT', type: 'answers', data: { question_id: questionId, body }, label: `Réponse : ${body.slice(0, 40)}` },
-      );
-    },
-    onSuccess: (outcome) => {
-      if (outcome.queued) return;
-      void queryClient.invalidateQueries({ queryKey: qaKeys.answers(questionId) });
-      void queryClient.invalidateQueries({ queryKey: qaKeys.detail(questionId) });
-    },
+    mutationFn: (input: { title: string; body: string; tags: string[]; hub_id?: string | null }) =>
+      unwrap(api.POST('/api/qa/questions/', { body: { ...input, hub_id: input.hub_id ?? null } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['qa', 'list'] }),
   });
 }
 
@@ -110,6 +79,11 @@ export function useAnswerActions(questionId: string) {
     void queryClient.invalidateQueries({ queryKey: qaKeys.answers(questionId) });
     void queryClient.invalidateQueries({ queryKey: qaKeys.detail(questionId) });
   };
+  const create = useMutation({
+    mutationFn: (body: string) =>
+      unwrap(api.POST('/api/qa/questions/{question_id}/answers/', { params: { path: { question_id: questionId } }, body: { body } })),
+    onSuccess: refresh,
+  });
   const accept = useMutation({
     mutationFn: (answerId: string) =>
       unwrap(api.POST('/api/qa/answers/{answer_id}/accept/', { params: { path: { answer_id: answerId } } })),
@@ -120,42 +94,5 @@ export function useAnswerActions(questionId: string) {
       unwrap(api.POST('/api/qa/answers/{answer_id}/vote/', { params: { path: { answer_id: answerId } }, body: { value } })),
     onSuccess: refresh,
   });
-  const remove = useMutation({
-    mutationFn: (answerId: string) =>
-      unwrap(api.DELETE('/api/qa/answers/{answer_id}/', { params: { path: { answer_id: answerId } } })),
-    onSuccess: refresh,
-  });
-  return { accept, vote, remove };
-}
-
-export function useRegenerateAiAnswer(questionId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () =>
-      unwrap(api.POST('/api/qa/questions/{question_id}/ai-answer/', { params: { path: { question_id: questionId } } })),
-    onSuccess: (question) => queryClient.setQueryData(qaKeys.detail(questionId), question),
-  });
-}
-
-export function useDeleteQuestion() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) =>
-      unwrap(api.DELETE('/api/qa/questions/{question_id}/', { params: { path: { question_id: id } } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: qaKeys.all }),
-  });
-}
-
-/** Reformulation proposée par l'IA (à accepter ou refuser). */
-export async function rephraseQuestion(title: string, body: string) {
-  const { job_id } = await unwrap(api.POST('/api/qa/rephrase/', { body: { title, body } }));
-  return waitForJob<{ title: string; body: string }>(job_id);
-}
-
-/** Question vocale : envoi du message (converti en Opus côté serveur) puis transcription Whisper. */
-export async function transcribeVoice(file: PickedFile) {
-  const media = await uploadMedia(file, 'audio');
-  const { job_id } = await unwrap(api.POST('/api/qa/transcribe/', { body: { media_id: media.id, language: 'fr' } }));
-  const { text } = await waitForJob<{ text: string }>(job_id, { timeout: 120_000 });
-  return { text, mediaId: media.id };
+  return { create, accept, vote };
 }

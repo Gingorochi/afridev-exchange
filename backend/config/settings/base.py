@@ -216,6 +216,11 @@ GITLAB_URL = env("GITLAB_URL", default="https://gitlab.com")
 GITLAB_CLIENT_ID = env("GITLAB_CLIENT_ID", default="")
 GITLAB_CLIENT_SECRET = env("GITLAB_CLIENT_SECRET", default="")
 OAUTH_REDIRECT_URI = env("OAUTH_REDIRECT_URI", default="http://localhost:3000/oauth/callback")
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")
+GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET", default="")
+# Adresse publique de l'API (https://api.exemple.com) : base de l'URL de retour OAuth de
+# l'appli mobile. Vide : déduite de la requête (développement).
+API_PUBLIC_URL = env("API_PUBLIC_URL", default="")
 
 # SMS : Africa's Talking (« sandbox » comme nom d'utilisateur pour les tests).
 SMS_PROVIDER_API_KEY = env("SMS_PROVIDER_API_KEY", default="")

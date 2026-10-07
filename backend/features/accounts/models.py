@@ -32,11 +32,12 @@ class User(AbstractUser):
 
 
 class SocialAccount(BaseModel):
-    """Compte GitHub / GitLab rattaché à un utilisateur."""
+    """Compte GitHub / GitLab / Google rattaché à un utilisateur."""
 
     class Provider(models.TextChoices):
         GITHUB = "github", "GitHub"
         GITLAB = "gitlab", "GitLab"
+        GOOGLE = "google", "Google"
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="social_accounts")
     provider = models.CharField(max_length=20, choices=Provider.choices)

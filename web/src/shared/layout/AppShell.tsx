@@ -22,6 +22,7 @@ import { flushSync } from 'react-dom';
 
 import { useDataSaver } from '@/shared/data-saver';
 import { useIsClient } from '@/shared/hooks';
+import { useLang } from '@/shared/i18n';
 import { cn } from '@/shared/lib';
 import { ConnectivityStrip } from '@/shared/offline';
 import { useSession } from '@/shared/session';
@@ -73,6 +74,7 @@ export function AppShell({
   const [help, setHelp] = useState(false);
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const pathname = usePathname();
+  const { t } = useLang();
   // Le tiroir se referme de lui-même quand on change de page (il mémorise la page d'ouverture).
   const drawerOpen = drawer === pathname;
   const openHelp = useCallback(() => setHelp(true), []);
@@ -84,7 +86,7 @@ export function AppShell({
         href="#contenu"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-card focus:px-3 focus:py-2"
       >
-        Aller au contenu
+        {t('nav.skip_to_content')}
       </a>
       {/* En-tête et colonne de gauche partagent le même fond : un seul cadre, sans filet entre eux. */}
       <header className="sticky top-0 z-30 bg-shell">
@@ -123,22 +125,79 @@ export function AppShell({
 }
 
 function Drawer({ communities, onClose }: { communities?: React.ReactNode; onClose: () => void }) {
+  const { isAuthenticated, profile, signOut } = useSession();
+  const { t } = useLang();
+  const router = useRouter();
+  const name = profile?.display_name || profile?.username || '?';
+  const accent = profile ? profileColorHex(profile.username, profile.accent_color) : undefined;
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal aria-label="Menu">
-      <button type="button" aria-label="Fermer le menu" className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="animate-drawer absolute inset-y-0 left-0 flex w-[min(19rem,86vw)] flex-col rounded-r-3xl bg-shell shadow-raised">
-        <div className="flex h-16 items-center justify-between px-4">
+    <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal aria-label={t('nav.menu_open')}>
+      <button
+        type="button"
+        aria-label={t('nav.menu_close')}
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+      />
+      <div className="animate-drawer absolute inset-y-0 left-0 flex w-[min(21rem,88vw)] flex-col rounded-r-3xl border-r border-line/60 bg-surface shadow-2xl">
+        {/* En-tête du tiroir */}
+        <div className="flex h-16 items-center justify-between border-b border-line/60 px-4">
           <Logo />
-          <IconButton label="Fermer le menu" onClick={onClose}>
+          <IconButton label={t('nav.menu_close')} onClick={onClose}>
             <X className="size-5" aria-hidden />
           </IconButton>
         </div>
-        <div className="flex-1 overflow-y-auto px-3 pb-4">
+
+        {/* Fiche Profil / Auth en haut du tiroir */}
+        <div className="border-b border-line/60 bg-container-low/50 p-4">
+          {isAuthenticated && profile ? (
+            <Link
+              href="/profile"
+              onClick={onClose}
+              className="flex items-center gap-3 rounded-2xl border border-line bg-card p-3 shadow-xs transition-all active:scale-98"
+            >
+              <Avatar name={name} src={profile?.avatar_url} color={accent} size={44} />
+              <div className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold text-ink">{name}</span>
+                <span className="block truncate text-xs text-ink-muted">@{profile.username}</span>
+              </div>
+              <span className="flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-primary-ink">
+                <Flame className="size-3.5" aria-hidden />
+                {profile.karma_score}
+              </span>
+            </Link>
+          ) : (
+            <div className="rounded-2xl border border-line bg-card p-3.5 text-center shadow-xs">
+              <p className="text-xs font-bold text-ink mb-1">Espace Développeurs Africains</p>
+              <p className="text-[0.75rem] text-ink-muted mb-3">Rejoignez la communauté pour collaborer, partager et progresser.</p>
+              <div className="flex gap-2">
+                <Link
+                  href="/login"
+                  onClick={onClose}
+                  className="flex-1 rounded-xl bg-primary py-2 text-center text-xs font-bold text-on-primary shadow-xs"
+                >
+                  {t('auth.login')}
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={onClose}
+                  className="flex-1 rounded-xl border border-line bg-container-low py-2 text-center text-xs font-medium text-ink"
+                >
+                  {t('auth.register')}
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Liens de navigation & Hubs */}
+        <div className="flex-1 overflow-y-auto px-3 py-3">
           <SideNav communities={communities} showShortcuts={false} />
         </div>
       </div>
@@ -155,31 +214,59 @@ function TopBar({
   onMenu: () => void;
   onHelp: () => void;
 }) {
-  const { isAuthenticated } = useSession();
+  const { isAuthenticated, profile } = useSession();
+  const { t } = useLang();
+  const name = profile?.display_name || profile?.username || '?';
+  const accent = profile ? profileColorHex(profile.username, profile.accent_color) : undefined;
+
   return (
     <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center gap-2 px-3 sm:px-4">
-      <IconButton label="Ouvrir le menu" onClick={onMenu} className="-ml-1 lg:hidden">
-        <MenuIcon className="size-5" aria-hidden />
-      </IconButton>
+      {/* Bouton Menu / Avatar sur mobile */}
+      <button
+        type="button"
+        onClick={onMenu}
+        aria-label={t('nav.menu_open')}
+        className="group relative flex size-9.5 shrink-0 items-center justify-center rounded-xl border border-line/80 bg-card/80 text-ink-muted transition-all active:scale-95 hover:border-line hover:text-ink lg:hidden shadow-2xs"
+      >
+        {isAuthenticated && profile ? (
+          <Avatar name={name} src={profile?.avatar_url} color={accent} size={28} />
+        ) : (
+          <MenuIcon className="size-5" aria-hidden />
+        )}
+        <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary" />
+      </button>
+
       <Link href="/feed" aria-label="AfriDev Exchange, accueil" className="shrink-0 rounded-lg lg:w-[15rem] lg:pl-1">
         <Logo />
       </Link>
+
+      {/* Barre de recherche sur tablette / desktop */}
       <div className="flex min-w-0 flex-1 px-2 lg:px-0">
         <SearchTrigger />
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <IconButton label="Rechercher" onClick={openCommandPalette} className="md:hidden">
-          <Search className="size-5" aria-hidden />
-        </IconButton>
+
+      {/* Actions droite */}
+      <div className="flex shrink-0 items-center gap-1.5">
+        {/* Déclencheur de recherche mobile compact avec capsule stylée */}
+        <button
+          type="button"
+          onClick={openCommandPalette}
+          aria-label={t('nav.search')}
+          className="flex h-9 items-center gap-1.5 rounded-xl border border-line/70 bg-card/80 px-2.5 text-xs text-ink-muted transition-all active:scale-95 hover:border-line hover:text-ink md:hidden shadow-2xs"
+        >
+          <Search className="size-4 text-primary" aria-hidden />
+          <span className="hidden xs:inline text-[0.75rem] font-medium">{t('nav.search')}</span>
+        </button>
+
         {isAuthenticated ? <PublishMenu className="mr-1 hidden sm:inline-flex" /> : null}
         {isAuthenticated ? notifications : null}
-        <ThemeToggle className="hidden sm:inline-flex" />
-        <span className="mx-1.5 hidden h-6 w-px bg-line sm:block" aria-hidden />
+        <ThemeToggle className="inline-flex" />
+        <span className="mx-1 hidden h-6 w-px bg-line sm:block" aria-hidden />
         {isAuthenticated ? (
           <AccountMenu onHelp={onHelp} />
         ) : (
           <Link href="/login" className={buttonClasses({ size: 'sm' })}>
-            <LogIn className="size-4" aria-hidden /> Se connecter
+            <LogIn className="size-4" aria-hidden /> <span className="hidden xs:inline">{t('auth.login')}</span>
           </Link>
         )}
       </div>
@@ -190,15 +277,16 @@ function TopBar({
 /** Faux champ de recherche : ouvre la palette (recherche instantanée et navigation au clavier). */
 function SearchTrigger() {
   const isClient = useIsClient();
+  const { t } = useLang();
   return (
     <button
       type="button"
       onClick={openCommandPalette}
-      aria-label="Rechercher (raccourci : Ctrl+K)"
+      aria-label={`${t('nav.search')} (Ctrl+K)`}
       className="group hidden h-11 w-full max-w-2xl items-center gap-3 rounded-full bg-card pr-3 pl-4.5 text-body-sm text-ink-faint ring-1 ring-line/70 transition-[background-color,box-shadow] hover:shadow-raised hover:ring-line md:flex dark:bg-container"
     >
       <Search className="size-[18px] shrink-0 transition-colors group-hover:text-ink-muted" aria-hidden />
-      <span className="flex-1 truncate text-left">Rechercher questions, snippets, projets, membres…</span>
+      <span className="flex-1 truncate text-left">{t('nav.search_placeholder')}</span>
       <span className="flex shrink-0 items-center gap-0.5" aria-hidden>
         <Kbd>{isClient ? modifierKeyLabel() : 'Ctrl'}</Kbd>
         <Kbd>K</Kbd>
@@ -222,9 +310,10 @@ function subscribeSystemTheme(callback: () => void) {
 function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useTheme();
   const isClient = useIsClient();
+  const { t } = useLang();
   const systemDark = useSyncExternalStore(subscribeSystemTheme, () => window.matchMedia(DARK_QUERY).matches, () => false);
   const dark = isClient && (theme === 'dark' || (theme === 'system' && systemDark));
-  const label = dark ? 'Passer en mode clair' : 'Passer en mode sombre';
+  const label = dark ? t('nav.theme_to_light') : t('nav.theme_to_dark');
 
   const toggle = (event: React.MouseEvent<HTMLButtonElement>) => {
     const next = dark ? 'light' : 'dark';
@@ -287,6 +376,7 @@ function AccountMenu({ onHelp }: { onHelp: () => void }) {
   const { profile, user, signOut } = useSession();
   const { textOnly, setMode } = useDataSaver();
   const [theme, setTheme] = useTheme();
+  const { t } = useLang();
   const router = useRouter();
   const name = profile?.display_name || profile?.username || '?';
   const accent = profile ? profileColorHex(profile.username, profile.accent_color) : undefined;
@@ -298,7 +388,7 @@ function AccountMenu({ onHelp }: { onHelp: () => void }) {
       trigger={(props) => (
         <button
           type="button"
-          aria-label="Mon compte"
+          aria-label={t('nav.my_account')}
           {...props}
           className="rounded-full ring-offset-2 ring-offset-card transition-shadow hover:ring-2 hover:ring-line-strong aria-expanded:ring-2 aria-expanded:ring-primary"
         >
@@ -321,35 +411,35 @@ function AccountMenu({ onHelp }: { onHelp: () => void }) {
       </Link>
       <MenuSeparator />
       <MenuItem href="/profile">
-        <UserRound aria-hidden /> Mon profil
+        <UserRound aria-hidden /> {t('nav.profile')}
       </MenuItem>
       <MenuItem href="/settings">
-        <Settings aria-hidden /> Réglages
+        <Settings aria-hidden /> {t('nav.settings')}
       </MenuItem>
       {user?.is_staff ? (
         <MenuItem href="/admin">
-          <ShieldCheck aria-hidden /> Back-office
+          <ShieldCheck aria-hidden /> {t('nav.admin')}
         </MenuItem>
       ) : null}
       <MenuItem onSelect={onHelp}>
         <Keyboard aria-hidden />
-        <span className="flex-1">Raccourcis clavier</span>
+        <span className="flex-1">{t('nav.shortcuts')}</span>
         <Kbd>?</Kbd>
       </MenuItem>
       <MenuSeparator />
       <div className="flex items-center justify-between gap-3 rounded-md py-0.5 pl-2.5 text-body-sm text-ink">
         <span className="flex items-center gap-2.5">
-          <EyeOff className="size-4 text-ink-muted" aria-hidden /> Mode texte seul
+          <EyeOff className="size-4 text-ink-muted" aria-hidden /> {t('nav.text_only')}
         </span>
-        <Switch checked={textOnly} onChange={(on) => setMode(on ? 'on' : 'off')} label="Mode texte seul" />
+        <Switch checked={textOnly} onChange={(on) => setMode(on ? 'on' : 'off')} label={t('nav.text_only')} />
       </div>
       {/* Sur téléphone, le sélecteur de thème de l'en-tête est masqué : il reste ici. */}
       <div className="flex items-center justify-between gap-3 rounded-md py-0.5 pl-2.5 text-body-sm text-ink sm:hidden">
         <span className="flex items-center gap-2.5">
           {dark ? <Moon className="size-4 text-ink-muted" aria-hidden /> : <Sun className="size-4 text-ink-muted" aria-hidden />}
-          Mode sombre
+          {t('nav.dark_mode')}
         </span>
-        <Switch checked={dark} onChange={(on) => setTheme(on ? 'dark' : 'light')} label="Mode sombre" />
+        <Switch checked={dark} onChange={(on) => setTheme(on ? 'dark' : 'light')} label={t('nav.dark_mode')} />
       </div>
       <MenuSeparator />
       <MenuItem
@@ -358,7 +448,7 @@ function AccountMenu({ onHelp }: { onHelp: () => void }) {
           router.replace('/');
         }}
       >
-        <LogOut aria-hidden /> Se déconnecter
+        <LogOut aria-hidden /> {t('auth.logout')}
       </MenuItem>
     </Menu>
   );
@@ -367,26 +457,27 @@ function AccountMenu({ onHelp }: { onHelp: () => void }) {
 /** Aide « ? » : tous les raccourcis du cadre. */
 function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const isClient = useIsClient();
+  const { t } = useLang();
   const general: Array<[string[], string]> = [
-    [[isClient ? modifierKeyLabel() : 'Ctrl', 'K'], 'Rechercher'],
-    [['N'], 'Nouveau post'],
-    [['['], 'Replier la colonne de gauche'],
-    [['?'], 'Afficher cette aide'],
-    [['Échap'], 'Fermer un menu ou un panneau'],
+    [[isClient ? modifierKeyLabel() : 'Ctrl', 'K'], t('nav.search')],
+    [['N'], t('feed.new_post')],
+    [['['], t('shortcuts.collapse_sidebar')],
+    [['?'], t('shortcuts.show_help')],
+    [['Échap'], t('shortcuts.close_modal')],
   ];
   return (
-    <Dialog open={open} onClose={onClose} title="Raccourcis clavier">
+    <Dialog open={open} onClose={onClose} title={t('shortcuts.title')}>
       <div className="grid gap-6 sm:grid-cols-2">
         <section>
-          <h3 className="mb-2 text-label-md font-semibold text-ink-faint">Aller à</h3>
+          <h3 className="mb-2 text-label-md font-semibold text-ink-faint">{t('shortcuts.go_to')}</h3>
           <ul className="space-y-1.5">
             {NAV_ITEMS.filter((item) => item.key).map((item) => (
-              <ShortcutRow key={item.href} keys={['G', item.key!.toUpperCase()]} label={item.label} />
+              <ShortcutRow key={item.href} keys={['G', item.key!.toUpperCase()]} label={item.msgKey ? t(item.msgKey) : item.label} />
             ))}
           </ul>
         </section>
         <section>
-          <h3 className="mb-2 text-label-md font-semibold text-ink-faint">Partout</h3>
+          <h3 className="mb-2 text-label-md font-semibold text-ink-faint">{t('shortcuts.everywhere')}</h3>
           <ul className="space-y-1.5">
             {general.map(([keys, label]) => (
               <ShortcutRow key={label} keys={keys} label={label} />
@@ -413,27 +504,28 @@ function ShortcutRow({ keys, label }: { keys: string[]; label: string }) {
 
 function BottomNav() {
   const { isAuthenticated, profile } = useSession();
+  const { t } = useLang();
   const pathname = navPath(usePathname(), profile?.username);
   return (
     <nav
       aria-label="Navigation mobile"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line/60 bg-shell/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-line/70 bg-surface/90 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.3)] lg:hidden"
     >
-      <ul className="mx-auto flex h-16 max-w-lg items-stretch justify-around px-2">
+      <ul className="mx-auto flex h-15 max-w-lg items-center justify-around px-2">
         {MOBILE_TABS.map((item, index) =>
           item ? (
-            <li key={item.href} className="flex flex-1">
+            <li key={item.href} className="flex flex-1 items-center justify-center">
               <BottomTab item={item} active={isActive(pathname, item.href)} />
             </li>
           ) : (
-            <li key={`create-${index}`} className="flex flex-1 items-center justify-center">
+            <li key={`create-${index}`} className="flex shrink-0 items-center justify-center px-1">
               {isAuthenticated ? (
                 <PublishMenu compact />
               ) : (
                 <Link
                   href="/login"
-                  className="flex size-11 items-center justify-center rounded-xl bg-primary text-on-primary shadow-raised"
-                  aria-label="Se connecter"
+                  className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-primary to-amber-500 text-on-primary shadow-raised ring-2 ring-white/20 transition-transform active:scale-90"
+                  aria-label={t('auth.login')}
                 >
                   <LogIn className="size-5" aria-hidden />
                 </Link>
@@ -446,27 +538,35 @@ function BottomNav() {
   );
 }
 
-/** Onglet du bas : pastille derrière l'icône active (zone tactile pleine hauteur). */
+/** Onglet du bas : pastille tactile avec micro-animations haptiques et badge actif. */
 function BottomTab({ item, active }: { item: NavItem; active: boolean }) {
+  const { t } = useLang();
+  const label = item.shortKey ? t(item.shortKey) : item.short;
   return (
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'relative flex flex-1 flex-col items-center justify-center gap-1 text-label-sm font-medium transition-colors active:scale-95',
-        active ? 'text-ink' : 'text-ink-faint',
+        'group relative flex w-full flex-col items-center justify-center py-1 text-center transition-all duration-150 active:scale-85 select-none',
+        active ? 'text-primary font-bold' : 'text-ink-faint hover:text-ink',
       )}
     >
-      {active ? <span className="absolute top-0 h-0.5 w-8 rounded-b-full bg-primary" aria-hidden /> : null}
       <span
         className={cn(
-          'flex h-7 w-12 items-center justify-center rounded-full transition-colors',
-          active ? 'bg-primary-soft text-primary-ink' : 'bg-transparent',
+          'relative flex h-7.5 w-12 items-center justify-center rounded-full transition-all duration-200',
+          active
+            ? 'bg-primary-soft text-primary-ink shadow-2xs scale-105'
+            : 'bg-transparent text-ink-muted group-hover:bg-container-low group-hover:text-ink',
         )}
       >
-        <item.icon className="size-5" aria-hidden />
+        <item.icon className="size-4.5 stroke-[2.2]" aria-hidden />
+        {active ? (
+          <span className="absolute -top-1 size-1 rounded-full bg-primary animate-pulse" />
+        ) : null}
       </span>
-      {item.short}
+      <span className="mt-0.5 block truncate text-[0.6875rem] leading-none tracking-tight">
+        {label}
+      </span>
     </Link>
   );
 }

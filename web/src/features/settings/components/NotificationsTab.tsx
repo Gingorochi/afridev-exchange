@@ -1,64 +1,106 @@
 'use client';
 
-import { BellRing, Mail, Smartphone } from 'lucide-react';
+import { Bell, BellRing, Check, Mail, MessageSquare, Shield, Smartphone } from 'lucide-react';
 
 import { errorMessage, type Schemas } from '@/shared/api';
-import { Card, CardHeader, Skeleton, Switch, useToast } from '@/shared/ui';
+import { Skeleton, Switch, useToast } from '@/shared/ui';
 
 import { useNotificationPreferences, useUpdateNotificationPreferences } from '../api';
 
-/** Types de notification reçus, et canaux push / e-mail. */
 export function NotificationsTab() {
   const prefs = useNotificationPreferences();
   const update = useUpdateNotificationPreferences();
   const toast = useToast();
 
   const save = (changes: Parameters<typeof update.mutate>[0]) =>
-    update.mutate(changes, { onError: (error) => toast(errorMessage(error), 'error') });
+    update.mutate(changes, {
+      onError: (error) => toast(errorMessage(error), 'error'),
+      onSuccess: () => toast('Préférences enregistrées.'),
+    });
 
-  if (prefs.isPending) return <Skeleton className="h-64" />;
-  if (!prefs.data) return <p className="text-body-sm text-ink-muted">Les préférences nécessitent une connexion.</p>;
+  if (prefs.isPending) return <Skeleton className="h-64 rounded-2xl" />;
+  if (!prefs.data) {
+    return (
+      <div className="rounded-2xl border border-line bg-card p-6 text-center text-xs text-ink-muted">
+        Connectez-vous pour configurer vos alertes de notifications.
+      </div>
+    );
+  }
+
   const muted = new Set(prefs.data.muted_kinds);
 
   return (
     <div className="space-y-6">
-      <Card className="space-y-2 p-4 sm:p-6">
-        <CardHeader icon={<BellRing className="size-5" aria-hidden />} title="Canaux" subtitle="Les notifications restent toujours visibles dans l'application." />
-        <ChannelRow
-          icon={<Smartphone className="size-4" aria-hidden />}
-          title="Notifications push"
-          text="Sur l'application mobile."
-          checked={prefs.data.push_enabled}
-          onChange={(push_enabled) => save({ push_enabled })}
-        />
-        <ChannelRow
-          icon={<Mail className="size-4" aria-hidden />}
-          title="E-mails"
-          text="Seulement pour les événements importants (réponse acceptée, contenu masqué…)."
-          checked={prefs.data.email_enabled}
-          onChange={(email_enabled) => save({ email_enabled })}
-        />
-      </Card>
-      <Card className="p-4 sm:p-6">
-        <CardHeader title="Ce qui me notifie" subtitle="Décochez ce que vous ne voulez plus recevoir du tout." />
-        <ul className="mt-3 divide-y divide-line">
-          {prefs.data.kinds.map((kind) => (
-            <li key={kind.value} className="flex items-center justify-between gap-3 py-1.5">
-              <span className="text-body-sm text-ink">{kind.label}</span>
-              <Switch
-                checked={!muted.has(kind.value)}
-                label={kind.label}
-                onChange={(on) => {
-                  const next = new Set(muted);
-                  if (on) next.delete(kind.value);
-                  else next.add(kind.value);
-                  save({ muted_kinds: [...next] as Schemas['NotificationKindEnum'][] });
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      </Card>
+      {/* ── Canaux de Réception ── */}
+      <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-xs">
+        <div className="border-b border-line bg-container-low/40 p-5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-zinc-800 text-zinc-200">
+              <BellRing className="size-4.5" />
+            </span>
+            <div>
+              <h2 className="text-sm font-bold text-ink">Canaux de notification</h2>
+              <p className="text-xs text-ink-muted">Définissez comment et où vous souhaitez être alerté</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-3">
+          <ChannelRow
+            icon={<Smartphone className="size-4 text-primary" />}
+            title="Notifications Push"
+            text="Alertes directes sur votre appareil mobile ou navigateur web"
+            checked={prefs.data.push_enabled}
+            onChange={(push_enabled) => save({ push_enabled })}
+          />
+
+          <ChannelRow
+            icon={<Mail className="size-4 text-secondary" />}
+            title="E-mails récapitulatifs"
+            text="Réservé aux alertes majeures (réponse acceptée, mentions, alertes sécurité)"
+            checked={prefs.data.email_enabled}
+            onChange={(email_enabled) => save({ email_enabled })}
+          />
+        </div>
+      </div>
+
+      {/* ── Types d'événements ── */}
+      <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-xs">
+        <div className="border-b border-line bg-container-low/40 p-5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-lg bg-zinc-800 text-zinc-200">
+              <MessageSquare className="size-4.5" />
+            </span>
+            <div>
+              <h2 className="text-sm font-bold text-ink">Événements & Activités</h2>
+              <p className="text-xs text-ink-muted">Sélectionnez les interactions qui déclenchent une notification</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5">
+          <div className="divide-y divide-line rounded-xl border border-line overflow-hidden">
+            {prefs.data.kinds.map((kind) => {
+              const active = !muted.has(kind.value);
+              return (
+                <div key={kind.value} className="flex items-center justify-between gap-4 bg-card p-3.5 hover:bg-container-low/40 transition-colors">
+                  <span className="text-xs font-semibold text-ink">{kind.label}</span>
+                  <Switch
+                    checked={active}
+                    label={kind.label}
+                    onChange={(on) => {
+                      const next = new Set(muted);
+                      if (on) next.delete(kind.value);
+                      else next.add(kind.value);
+                      save({ muted_kinds: [...next] as Schemas['NotificationKindEnum'][] });
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -77,14 +119,16 @@ function ChannelRow({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-1.5">
-      <span className="flex items-center gap-3">
-        <span className="text-ink-muted">{icon}</span>
-        <span>
-          <span className="block text-body-sm font-medium text-ink">{title}</span>
-          <span className="block text-label-md text-ink-faint">{text}</span>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-container-low/40 p-4 transition-colors hover:bg-container-low/70">
+      <div className="flex items-center gap-3">
+        <span className="flex size-8 items-center justify-center rounded-lg bg-card border border-line shadow-xs">
+          {icon}
         </span>
-      </span>
+        <div>
+          <span className="block text-xs font-bold text-ink">{title}</span>
+          <span className="block text-[0.72rem] text-ink-muted mt-0.5">{text}</span>
+        </div>
+      </div>
       <Switch checked={checked} onChange={onChange} label={title} />
     </div>
   );

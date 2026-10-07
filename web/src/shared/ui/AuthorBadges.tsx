@@ -22,7 +22,7 @@ export function AuthorBadges({
   className?: string;
 }) {
   const country = countryOf(location);
-  const specialty = stack?.[0];
+  const specialty = Array.isArray(stack) && stack.length > 0 ? stack[0] : undefined;
   if (!country && !specialty) return null;
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1', className)}>

@@ -1,66 +1,76 @@
-import { createContext, useCallback, useContext, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { CheckCircle2, CircleAlert } from 'lucide-react-native';
+import { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, { FadeOutUp, SlideInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { radius, space, useTheme } from '@/shared/theme';
+import { haptic } from '@/shared/motion';
+import { radius, useTheme } from '@/shared/theme';
 
-import { Icon, Text } from './Text';
+import { Text } from './Text';
 
-type Tone = 'success' | 'error' | 'queued';
-interface ToastItem {
+type Tone = 'success' | 'error';
+interface ToastState {
   id: number;
   message: string;
   tone: Tone;
 }
 
-const ToastContext = createContext<(message: string, tone?: Tone) => void>(() => {});
+const ToastContext = createContext<(message: string, tone?: Tone) => void>(() => undefined);
 
-/** Messages éphémères au-dessus de la barre d'onglets (annoncés aux lecteurs d'écran). */
+/** Petit message qui descend du haut de l'écran puis s'efface (confirmation, erreur). */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const [items, setItems] = useState<ToastItem[]>([]);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const show = useCallback((message: string, tone: Tone = 'success') => {
-    const id = Date.now() + Math.random();
-    setItems((current) => [...current.slice(-1), { id, message, tone }]);
-    setTimeout(() => setItems((current) => current.filter((item) => item.id !== id)), 3500);
+    if (tone === 'error') haptic.error();
+    else haptic.success();
+    setToast({ id: Date.now(), message, tone });
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setToast(null), 2600);
   }, []);
 
+  const Icon = toast?.tone === 'error' ? CircleAlert : CheckCircle2;
   return (
     <ToastContext.Provider value={show}>
       {children}
-      <View pointerEvents="none" style={[styles.stack, { bottom: insets.bottom + 96 }]}>
-        {items.map((item) => (
-          <View
-            key={item.id}
-            accessibilityLiveRegion="polite"
-            style={[
-              styles.toast,
-              {
-                backgroundColor:
-                  item.tone === 'error' ? colors.dangerSoft : item.tone === 'queued' ? colors.tertiarySoft : colors.secondaryMint,
-              },
-            ]}
-          >
-            <Icon
-              name={item.tone === 'error' ? 'x-circle' : item.tone === 'queued' ? 'clock' : 'check-circle'}
-              size={18}
-              tone={item.tone === 'error' ? 'danger' : item.tone === 'queued' ? 'tertiary' : 'secondary'}
-            />
-            <Text variant="small" style={{ flex: 1 }}>
-              {item.message}
-            </Text>
-          </View>
-        ))}
-      </View>
+      {toast ? (
+        <Animated.View
+          key={toast.id}
+          entering={SlideInUp.springify().damping(16)}
+          exiting={FadeOutUp.duration(200)}
+          pointerEvents="none"
+          style={[styles.toast, { top: insets.top + 8, backgroundColor: colors.ink }]}
+        >
+          <Icon size={18} color={toast.tone === 'error' ? colors.danger : colors.secondaryInk} />
+          <Text variant="smallStrong" style={[styles.text, { color: colors.background }]} numberOfLines={3}>
+            {toast.message}
+          </Text>
+        </Animated.View>
+      ) : null}
     </ToastContext.Provider>
   );
 }
 
-export const useToast = () => useContext(ToastContext);
+export function useToast() {
+  return useContext(ToastContext);
+}
 
 const styles = StyleSheet.create({
-  stack: { position: 'absolute', left: space.md, right: space.md, gap: space.sm },
-  toast: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.md, borderRadius: radius.lg },
+  toast: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: radius.lg,
+  },
+  text: { flex: 1 },
 });

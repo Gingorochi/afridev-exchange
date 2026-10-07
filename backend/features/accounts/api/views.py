@@ -1,9 +1,12 @@
 """Vues minces : valident l'entrée, puis appellent services / selectors."""
 
 from django.conf import settings
+from django.http import HttpResponse, HttpResponseRedirect
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import escape
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -11,7 +14,7 @@ from rest_framework.views import APIView
 
 from core.throttling import OTPThrottle
 
-from .. import security, services
+from .. import oauth, security, services
 from ..authentication import NotPersonalAccessToken
 from ..export import export_user_data
 from .serializers import (
@@ -22,6 +25,7 @@ from .serializers import (
     LoginInputSerializer,
     MFALoginInputSerializer,
     OAuthInputSerializer,
+    OAuthProvidersSerializer,
     OTPRequestInputSerializer,
     OTPRequestOutputSerializer,
     OTPVerifyInputSerializer,
@@ -118,6 +122,81 @@ class OAuthLoginView(APIView):
         data.is_valid(raise_exception=True)
         user, created = services.login_with_oauth(provider=provider, **data.validated_data)
         return _auth_response(request, user, created=created)
+
+
+def _oauth_callback_url(request, provider: str) -> str:
+    path = reverse("accounts:oauth-callback", kwargs={"provider": provider})
+    if settings.API_PUBLIC_URL:
+        return f"{settings.API_PUBLIC_URL.rstrip('/')}{path}"
+    return request.build_absolute_uri(path)
+
+
+class OAuthProvidersView(APIView):
+    """Fournisseurs OAuth actifs : l'appli n'affiche que les boutons utilisables."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(responses=OAuthProvidersSerializer)
+    def get(self, request):
+        return Response({"providers": oauth.configured_providers()})
+
+
+class OAuthStartView(APIView):
+    """Appli mobile : redirige vers GitHub / Google ; le retour passe par OAuthCallbackView."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        parameters=[OpenApiParameter("return_to", str, required=True)],
+        responses={302: None},
+    )
+    def get(self, request, provider):
+        url = oauth.authorize_url(
+            provider,
+            callback_url=_oauth_callback_url(request, provider),
+            return_to=request.query_params.get("return_to", ""),
+        )
+        return HttpResponseRedirect(url)
+
+
+class OAuthCallbackView(APIView):
+    """Rebond : le fournisseur revient ici, on renvoie le code à l'appli (afridev:// ou exp://).
+
+    L'appli échange ensuite le code via POST /oauth/<provider>/ avec ce même redirect_uri.
+    """
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(exclude=True)
+    def get(self, request, provider):
+        params = request.query_params
+        try:
+            if params.get("error") or not params.get("code"):
+                reason = params.get("error_description") or params.get("error") or "annulée"
+                target = oauth.app_return_url(
+                    provider, state=params.get("state", ""), params={"error": reason}
+                )
+            else:
+                target = oauth.app_return_url(
+                    provider,
+                    state=params.get("state", ""),
+                    params={
+                        "code": params["code"],
+                        "redirect_uri": _oauth_callback_url(request, provider),
+                    },
+                )
+        except oauth.OAuthError as exc:
+            return HttpResponse(
+                f"<p style='font-family:sans-serif;padding:24px'>{escape(exc.message)}</p>",
+                status=400,
+            )
+        # HttpResponseRedirect refuse les schémas non web (exp://, afridev://).
+        response = HttpResponse(status=302)
+        response["Location"] = target
+        return response
 
 
 class MeView(APIView):

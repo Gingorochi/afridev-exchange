@@ -167,3 +167,7 @@ class OTPVerifyInputSerializer(serializers.Serializer):
 class OAuthInputSerializer(serializers.Serializer):
     code = serializers.CharField()
     redirect_uri = serializers.URLField(required=False)
+
+
+class OAuthProvidersSerializer(serializers.Serializer):
+    providers = serializers.ListField(child=serializers.ChoiceField(["github", "google", "gitlab"]))

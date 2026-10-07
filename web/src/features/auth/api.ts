@@ -2,10 +2,10 @@
 
 import type { Schemas } from '@afridev/api-client';
 
-import { api, GITHUB_CLIENT_ID, GITLAB_CLIENT_ID, GITLAB_URL, unwrap } from '@/shared/api';
+import { api, GITHUB_CLIENT_ID, GITLAB_CLIENT_ID, GITLAB_URL, GOOGLE_CLIENT_ID, unwrap } from '@/shared/api';
 
 export type AuthResponse = Schemas['AuthResponse'];
-export type OAuthProvider = 'github' | 'gitlab';
+export type OAuthProvider = 'github' | 'gitlab' | 'google';
 
 const PHONE_KEY = 'afridev.otp-phone';
 const STATE_KEY = 'afridev.oauth-state';
@@ -77,20 +77,26 @@ export const afterLogin = {
 };
 
 export function oauthAvailable(provider: OAuthProvider): boolean {
-  return Boolean(provider === 'github' ? GITHUB_CLIENT_ID : GITLAB_CLIENT_ID);
+  if (provider === 'github') return Boolean(GITHUB_CLIENT_ID);
+  if (provider === 'google') return Boolean(GOOGLE_CLIENT_ID);
+  return Boolean(GITLAB_CLIENT_ID);
 }
 
 export const oauthRedirectUri = () => `${window.location.origin}/oauth/callback`;
 
-/** Redirige vers GitHub / GitLab ; le paramètre state protège contre la falsification (CSRF). */
+/** Redirige vers GitHub / Google / GitLab ; le paramètre state protège contre la falsification (CSRF). */
 export function startOAuth(provider: OAuthProvider) {
   const state = `${provider}:${crypto.randomUUID()}`;
   sessionStorage.setItem(STATE_KEY, state);
   const redirect = encodeURIComponent(oauthRedirectUri());
-  const url =
-    provider === 'github'
-      ? `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirect}&scope=read:user%20user:email&state=${encodeURIComponent(state)}`
-      : `${GITLAB_URL}/oauth/authorize?client_id=${GITLAB_CLIENT_ID}&redirect_uri=${redirect}&response_type=code&scope=read_user&state=${encodeURIComponent(state)}`;
+  let url = '';
+  if (provider === 'github') {
+    url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirect}&scope=read:user%20user:email&state=${encodeURIComponent(state)}`;
+  } else if (provider === 'google') {
+    url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirect}&response_type=code&scope=openid%20email%20profile&state=${encodeURIComponent(state)}`;
+  } else {
+    url = `${GITLAB_URL}/oauth/authorize?client_id=${GITLAB_CLIENT_ID}&redirect_uri=${redirect}&response_type=code&scope=read_user&state=${encodeURIComponent(state)}`;
+  }
   window.location.assign(url);
 }
 
@@ -100,25 +106,29 @@ export function consumeOAuthState(state: string | null): OAuthProvider | null {
   sessionStorage.removeItem(STATE_KEY);
   if (!state || state !== expected) return null;
   const provider = state.split(':')[0];
-  return provider === 'github' || provider === 'gitlab' ? provider : null;
+  return provider === 'github' || provider === 'google' || provider === 'gitlab' ? provider : null;
 }
 
 export const COUNTRIES = [
-  { code: '+228', label: 'TG', name: 'Togo' },
-  { code: '+229', label: 'BJ', name: 'Bénin' },
-  { code: '+225', label: 'CI', name: "Côte d'Ivoire" },
-  { code: '+221', label: 'SN', name: 'Sénégal' },
-  { code: '+226', label: 'BF', name: 'Burkina Faso' },
-  { code: '+223', label: 'ML', name: 'Mali' },
-  { code: '+227', label: 'NE', name: 'Niger' },
-  { code: '+237', label: 'CM', name: 'Cameroun' },
-  { code: '+233', label: 'GH', name: 'Ghana' },
-  { code: '+234', label: 'NG', name: 'Nigeria' },
-  { code: '+243', label: 'CD', name: 'RD Congo' },
-  { code: '+250', label: 'RW', name: 'Rwanda' },
-  { code: '+254', label: 'KE', name: 'Kenya' },
-  { code: '+212', label: 'MA', name: 'Maroc' },
-  { code: '+33', label: 'FR', name: 'France' },
+  { code: '+228', label: 'TG', name: 'Togo', flag: '🇹🇬' },
+  { code: '+225', label: 'CI', name: "Côte d'Ivoire", flag: '🇨🇮' },
+  { code: '+221', label: 'SN', name: 'Sénégal', flag: '🇸🇳' },
+  { code: '+229', label: 'BJ', name: 'Bénin', flag: '🇧🇯' },
+  { code: '+237', label: 'CM', name: 'Cameroun', flag: '🇨🇲' },
+  { code: '+226', label: 'BF', name: 'Burkina Faso', flag: '🇧🇫' },
+  { code: '+223', label: 'ML', name: 'Mali', flag: '🇲🇱' },
+  { code: '+227', label: 'NE', name: 'Niger', flag: '🇳🇪' },
+  { code: '+234', label: 'NG', name: 'Nigeria', flag: '🇳🇬' },
+  { code: '+233', label: 'GH', name: 'Ghana', flag: '🇬🇭' },
+  { code: '+243', label: 'CD', name: 'RD Congo', flag: '🇨🇩' },
+  { code: '+242', label: 'CG', name: 'Congo', flag: '🇨🇬' },
+  { code: '+250', label: 'RW', name: 'Rwanda', flag: '🇷🇼' },
+  { code: '+254', label: 'KE', name: 'Kenya', flag: '🇰🇪' },
+  { code: '+212', label: 'MA', name: 'Maroc', flag: '🇲🇦' },
+  { code: '+216', label: 'TN', name: 'Tunisie', flag: '🇹🇳' },
+  { code: '+213', label: 'DZ', name: 'Algérie', flag: '🇩🇿' },
+  { code: '+261', label: 'MG', name: 'Madagascar', flag: '🇲🇬' },
+  { code: '+33', label: 'FR', name: 'France', flag: '🇫🇷' },
 ];
 
 export function maskPhone(phone: string): string {

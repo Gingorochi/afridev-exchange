@@ -40,3 +40,15 @@ class PushDevice(BaseModel):
     )
     token = models.CharField(max_length=200, unique=True)
     platform = models.CharField(max_length=10, blank=True)  # ios / android
+
+
+class NotificationPreference(BaseModel):
+    """Réglages > Notifications : types coupés, canaux push et e-mail."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notification_preference"
+    )
+    # Types (Notification.Kind) que le membre ne veut plus recevoir du tout.
+    muted_kinds = models.JSONField(default=list, blank=True)
+    push_enabled = models.BooleanField(default=True)
+    email_enabled = models.BooleanField(default=True)

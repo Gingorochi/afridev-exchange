@@ -1,83 +1,77 @@
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Modal, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { radius, space, useTheme } from '@/shared/theme';
+import { t } from '@/shared/i18n';
+import { radius, useTheme } from '@/shared/theme';
 
-import { IconButton } from './Button';
 import { Text } from './Text';
 
 /**
- * Panneau du bas (bottom sheet) : coins arrondis à 24 px, poignée, fond assombri.
- * Les actions restent dans la zone du pouce plutôt que dans de nouvelles pages.
+ * Feuille qui monte du bas (ressort) sur un voile qui s'assombrit ; à la fermeture elle
+ * redescend avant de disparaître. Un toucher sur le voile la ferme.
  */
 export function Sheet({
-  open,
+  visible,
   onClose,
   title,
-  subtitle,
   children,
-  footer,
-  tall,
 }: {
-  open: boolean;
+  visible: boolean;
   onClose: () => void;
-  title: string;
-  subtitle?: string;
+  title?: string;
   children: React.ReactNode;
-  footer?: React.ReactNode;
-  tall?: boolean;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const [mounted, setMounted] = useState(visible);
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      progress.value = withSpring(1, { damping: 20, stiffness: 190 });
+    } else if (mounted) {
+      progress.value = withTiming(0, { duration: 220, easing: Easing.in(Easing.quad) }, (done) => {
+        if (done) runOnJS(setMounted)(false);
+      });
+    }
+  }, [mounted, progress, visible]);
+
+  const scrim = useAnimatedStyle(() => ({ opacity: progress.value }));
+  const sheet = useAnimatedStyle(() => ({ transform: [{ translateY: (1 - progress.value) * Math.min(height * 0.6, 480) }] }));
+
+  if (!mounted) return null;
   return (
-    <Modal visible={open} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
-        <Pressable
-          style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }]}
-          onPress={onClose}
-          accessibilityLabel="Fermer"
-        />
-        <View
-          style={[
-            styles.sheet,
-            { backgroundColor: colors.card, paddingBottom: insets.bottom + space.md, maxHeight: tall ? '92%' : '85%' },
-            tall && { height: '92%' },
-          ]}
-        >
-          <View style={[styles.handle, { backgroundColor: colors.borderStrong }]} />
-          <View style={styles.header}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text variant="headlineLg">{title}</Text>
-              {subtitle ? (
-                <Text variant="monoSm" tone="muted">
-                  {subtitle}
-                </Text>
-              ) : null}
-            </View>
-            <IconButton icon="x" label="Fermer" onPress={onClose} />
-          </View>
-          <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-            {children}
-          </ScrollView>
-          {footer ? <View style={styles.footer}>{footer}</View> : null}
-        </View>
-      </KeyboardAvoidingView>
+    <Modal visible transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }, scrim]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('header.close')} />
+      </Animated.View>
+      <Animated.View style={[styles.sheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + 12 }, sheet]}>
+        <Animated.View style={[styles.grabber, { backgroundColor: colors.lineStrong }]} />
+        {title ? (
+          <Text variant="headline" style={styles.title}>
+            {title}
+          </Text>
+        ) : null}
+        {children}
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: radius.sheet,
-    borderTopRightRadius: radius.sheet,
-    shadowColor: '#1A1918',
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 12,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopLeftRadius: radius.lg + 6,
+    borderTopRightRadius: radius.lg + 6,
+    paddingTop: 8,
   },
-  handle: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, marginTop: 8 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm, paddingHorizontal: space.margin, paddingTop: space.sm },
-  body: { paddingHorizontal: space.margin, paddingBottom: space.md, gap: space.md },
-  footer: { paddingHorizontal: space.margin, paddingTop: space.sm, gap: space.sm },
+  grabber: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, marginBottom: 8 },
+  title: { paddingHorizontal: 20, paddingVertical: 8 },
 });

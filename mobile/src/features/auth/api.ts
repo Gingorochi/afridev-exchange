@@ -1,68 +1,64 @@
-import type { Schemas } from '@afridev/api-client';
+import { useQuery } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
-import { api, ApiError, GITHUB_CLIENT_ID, unwrap } from '@/shared/api';
-import { uuid } from '@/shared/offline';
-import { settingsStore } from '@/shared/storage';
+import { api, API_URL, ApiError, type Schemas, unwrap } from '@/shared/api';
+import { t } from '@/shared/i18n';
 
 export type AuthResponse = Schemas['AuthResponse'];
+export type OAuthProvider = 'github' | 'google';
 
-export const authApi = {
-  login: (identifier: string, password: string) =>
-    unwrap(api.POST('/api/accounts/login/', { body: { identifier, password } })),
-  register: (body: Schemas['RegisterInputRequest']) => unwrap(api.POST('/api/accounts/register/', { body })),
-  requestOtp: (phone_number: string) => unwrap(api.POST('/api/accounts/otp/request/', { body: { phone_number } })),
-  verifyOtp: (phone_number: string, code: string) =>
-    unwrap(api.POST('/api/accounts/otp/verify/', { body: { phone_number, code } })),
-};
+export const PROVIDER_LABELS: Record<OAuthProvider, string> = { github: 'GitHub', google: 'Google' };
 
-export const COUNTRIES = [
-  { code: '+228', flag: '🇹🇬', name: 'Togo' },
-  { code: '+229', flag: '🇧🇯', name: 'Bénin' },
-  { code: '+225', flag: '🇨🇮', name: "Côte d'Ivoire" },
-  { code: '+221', flag: '🇸🇳', name: 'Sénégal' },
-  { code: '+226', flag: '🇧🇫', name: 'Burkina Faso' },
-  { code: '+223', flag: '🇲🇱', name: 'Mali' },
-  { code: '+227', flag: '🇳🇪', name: 'Niger' },
-  { code: '+237', flag: '🇨🇲', name: 'Cameroun' },
-  { code: '+233', flag: '🇬🇭', name: 'Ghana' },
-  { code: '+234', flag: '🇳🇬', name: 'Nigeria' },
-  { code: '+243', flag: '🇨🇩', name: 'RD Congo' },
-  { code: '+250', flag: '🇷🇼', name: 'Rwanda' },
-  { code: '+254', flag: '🇰🇪', name: 'Kenya' },
-  { code: '+212', flag: '🇲🇦', name: 'Maroc' },
-  { code: '+33', flag: '🇫🇷', name: 'France' },
-];
-
-export function maskPhone(phone: string): string {
-  return phone.length > 6 ? `${phone.slice(0, 6)} •• •• ${phone.slice(-2)}` : phone;
+/** Fournisseurs activés côté serveur (GITHUB_CLIENT_ID / GOOGLE_CLIENT_ID renseignés). */
+export function useOAuthProviders() {
+  return useQuery({
+    queryKey: ['auth', 'providers'],
+    queryFn: async () => (await unwrap(api.GET('/api/accounts/oauth/providers/'))).providers,
+    staleTime: 10 * 60_000,
+    retry: false,
+  });
 }
 
-export const markOnboarded = () => settingsStore.set('onboarded', true);
-
-export const githubAvailable = () => Boolean(GITHUB_CLIENT_ID);
+export class OAuthCancelled extends Error {}
 
 /**
- * Connexion GitHub : navigateur sécurisé du système, retour dans l'appli par le lien
- * afridev://oauth. Le paramètre state protège contre la falsification de la réponse.
+ * Connexion GitHub / Google dans le navigateur sécurisé du système :
+ * appli → API /start → fournisseur → API /callback → retour appli (exp:// ou afridev://) avec le
+ * code, échangé ensuite contre les jetons. Les identifiants OAuth restent sur le serveur.
  */
-export async function loginWithGitHub(): Promise<AuthResponse | null> {
-  const redirectUri = Linking.createURL('oauth');
-  const state = `github:${uuid()}`;
-  const url =
-    `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}` +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user%20user:email&state=${encodeURIComponent(state)}`;
-  const result = await WebBrowser.openAuthSessionAsync(url, redirectUri);
-  if (result.type !== 'success') return null;
-  const { queryParams } = Linking.parse(result.url);
-  if (queryParams?.state !== state || typeof queryParams.code !== 'string') {
-    throw new ApiError('Connexion GitHub interrompue ou invalide.', 'oauth_failed', 0);
+export async function signInWithProvider(provider: OAuthProvider): Promise<AuthResponse> {
+  const returnUrl = Linking.createURL('oauth');
+  const startUrl = `${API_URL}/api/accounts/oauth/${provider}/start/?return_to=${encodeURIComponent(returnUrl)}`;
+  const result = await WebBrowser.openAuthSessionAsync(startUrl, returnUrl);
+  if (result.type !== 'success') throw new OAuthCancelled();
+
+  const params = Linking.parse(result.url).queryParams ?? {};
+  const read = (key: string) => (typeof params[key] === 'string' ? (params[key] as string) : '');
+  if (read('error')) {
+    throw new ApiError(
+      read('error') === 'access_denied' ? t('oauth.cancelled') : t('oauth.refused', { provider: PROVIDER_LABELS[provider], error: read('error') }),
+      'oauth_failed',
+      400,
+    );
   }
+  if (!read('code')) throw new ApiError(t('oauth.incomplete'), 'oauth_failed', 400);
+
   return unwrap(
     api.POST('/api/accounts/oauth/{provider}/', {
-      params: { path: { provider: 'github' } },
-      body: { code: queryParams.code, redirect_uri: redirectUri },
+      params: { path: { provider } },
+      body: { code: read('code'), redirect_uri: read('redirect_uri') || undefined },
     }),
   );
+}
+
+/** Force du mot de passe (0 à 4) : longueur, casse, chiffres, symboles. */
+export function passwordStrength(password: string): number {
+  if (!password) return 0;
+  let score = 0;
+  if (password.length >= 8) score += 1;
+  if (password.length >= 12) score += 1;
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
+  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score += 1;
+  return Math.min(score, 4);
 }

@@ -22,6 +22,8 @@ class Post(BaseModel):
     # Référence vers features.media, sans clé étrangère pour garder les features découplées.
     media_id = models.UUIDField(null=True, blank=True)
     tags = models.JSONField(default=list, blank=True)
+    # Hub de rattachement (features.hubs), facultatif : référence sans clé étrangère.
+    hub_id = models.UUIDField(null=True, blank=True, db_index=True)
     # Votes ↑/↓ : score = somme des votes, like_count = nombre de votes ↑.
     score = models.IntegerField(default=0)
     like_count = models.PositiveIntegerField(default=0)

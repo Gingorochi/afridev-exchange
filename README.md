@@ -20,7 +20,8 @@ afridev-exchange/
 │   ├── api-client/   # client + types générés depuis l'OpenAPI de Django
 │   ├── sync-schema/  # schéma de la base locale hors ligne (PowerSync)
 │   └── validation/   # schémas Zod communs + règles anti-secrets (Security Guard)
-├── infra/          # docker-compose, PowerSync, nginx
+├── infra/          # docker-compose infra, PowerSync, nginx, postgres init
+├── docker-compose.yml # Orchestration complète multi-conteneurs
 └── .github/workflows/ci.yml
 ```
 
@@ -37,25 +38,76 @@ Les trois couches suivent la même règle **feature-first** : un dossier par fon
 
 Frontières vérifiées en CI : **import-linter** (backend), **eslint-plugin-boundaries** (web, mobile).
 
-## Démarrage
+---
+
+## Démarrage rapide avec Docker (Option recommandée)
+
+Pour lancer **toute l'application** (PostgreSQL, Redis, Meilisearch, PowerSync, Backend Django, Worker Celery, Frontend Web Next.js et Reverse Proxy Nginx) en une seule commande :
 
 ```bash
-# 1. Infrastructure (Postgres + pgvector, Redis, Meilisearch, PowerSync)
-docker compose -f infra/docker-compose.yml up -d
+# Copier les variables d'environnement si ce n'est pas déjà fait
+cp .env.example .env
 
-# 2. Backend
+# Lancer tous les conteneurs
+docker compose up --build -d
+```
+
+Accès aux services :
+- **Web App :** [http://localhost:3000](http://localhost:3000) (ou via Nginx sur [http://localhost:80](http://localhost:80))
+- **API Backend / Swagger :** [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/)
+- **PowerSync :** [http://localhost:8080](http://localhost:8080)
+- **Meilisearch :** [http://localhost:7700](http://localhost:7700)
+
+---
+
+## Démarrage en Développement Local
+
+### 1. Lancer l'infrastructure de données
+```bash
+docker compose -f infra/docker-compose.yml up -d
+```
+
+### 2. Backend (Django + Celery)
+> **Prérequis :** [uv](https://github.com/astral-sh/uv) installé (`curl -LsSf https://astral.sh/uv/install.sh` ou sous Windows : `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`).
+
+```bash
 cd backend
 uv sync --extra dev
 uv run python manage.py migrate
 uv run python manage.py runserver
-
-# 3. Front (depuis la racine)
-corepack enable
-pnpm install
-cd mobile && npx expo install --fix && cd ..   # aligne les versions sur le SDK Expo courant
-pnpm generate:api      # régénère les types après chaque changement d'API
-pnpm --filter web dev
-pnpm --filter mobile start
 ```
 
-Variables d'environnement : copier `.env.example` en `.env`.
+*(Optionnel)* Pour lancer le worker Celery en local :
+```bash
+cd backend
+uv run celery -A config worker -l info
+```
+
+### 3. Frontend Web et Mobile (depuis la racine)
+```bash
+corepack enable
+pnpm install
+pnpm generate:api      # régénère le client TypeScript depuis l'OpenAPI de Django
+pnpm --filter web dev  # lance Next.js sur http://localhost:3000
+pnpm --filter mobile start # lance Metro / Expo pour le mobile
+```
+
+> **Note Windows :** Si l'exécution des scripts est désactivée dans PowerShell, exécutez dans un terminal administrateur : `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` ou utilisez `pnpm.cmd`.
+
+---
+
+## Tests et Qualité du Code
+
+```bash
+# Tests du backend (114 tests pytest avec Postgres/SQLite)
+cd backend && uv run pytest
+
+# Typecheck global TypeScript (Web, Mobile et Packages)
+pnpm typecheck
+
+# Linter de code global (ESLint + boundaries)
+pnpm lint
+
+# Tests End-to-End Playwright (Web)
+pnpm test
+```

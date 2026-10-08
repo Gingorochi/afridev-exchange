@@ -1,67 +1,112 @@
-// Une graisse = un import : seules les 7 polices utilisées sont embarquées dans l'appli.
-import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono/400Regular';
-import { JetBrainsMono_500Medium } from '@expo-google-fonts/jetbrains-mono/500Medium';
-import { JetBrainsMono_600SemiBold } from '@expo-google-fonts/jetbrains-mono/600SemiBold';
-import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans/400Regular';
-import { PlusJakartaSans_500Medium } from '@expo-google-fonts/plus-jakarta-sans/500Medium';
-import { PlusJakartaSans_600SemiBold } from '@expo-google-fonts/plus-jakarta-sans/600SemiBold';
-import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans/700Bold';
-import { useFonts } from 'expo-font';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { tokenStore } from '@/shared/api';
-import { AppProviders } from '@/shared/providers/AppProviders';
-import { useTheme } from '@/shared/theme';
+import { ApiError, tokenStore } from '@/shared/api';
+import { AnimatedSplash } from '@/shared/brand';
+import { DataSaverProvider } from '@/shared/data-saver';
+import { LangProvider } from '@/shared/i18n';
+import { SessionProvider, useSession } from '@/shared/session';
+import { ThemeProvider, useTheme } from '@/shared/theme';
+import { ToastProvider } from '@/shared/ui';
 
 void SplashScreen.preventAutoHideAsync();
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      // Erreur métier (4xx) : aucun nouvel essai. Réseau coupé : un seul, pour vite expliquer quoi faire.
+      retry: (count, error) => {
+        if (error instanceof ApiError && error.status >= 400 && error.status < 500) return false;
+        if (error instanceof ApiError && error.isNetwork) return count < 1;
+        return count < 2;
+      },
+    },
+  },
+});
+
+const MODAL = { presentation: 'modal', animation: 'slide_from_bottom' } as const;
+
+/**
+ * L'appli n'est accessible qu'une fois connecté : sans session, seul l'écran de connexion existe.
+ * Se connecter (ou se déconnecter, ou voir sa session expirer) bascule de lui-même d'un monde à l'autre.
+ */
 function Navigator() {
   const { colors, isDark } = useTheme();
+  const { isAuthenticated } = useSession();
   return (
     <>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="compose/post" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="compose/question" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="compose/short" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="snippet/edit" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="project/new" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="shorts" options={{ animation: 'fade', contentStyle: { backgroundColor: '#000' } }} />
+      <StatusBar style={isDark ? 'light' : 'dark'} animated />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right',
+          gestureEnabled: true,
+          fullScreenGestureEnabled: true,
+        }}
+      >
+        <Stack.Protected guard={isAuthenticated}>
+          <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="compose/post" options={MODAL} />
+          <Stack.Screen name="compose/question" options={MODAL} />
+          <Stack.Screen name="edit-profile" options={MODAL} />
+          <Stack.Screen name="post/[id]" />
+          <Stack.Screen name="question/[id]" />
+          <Stack.Screen name="h/[slug]" />
+          <Stack.Screen name="u/[username]" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="settings/index" />
+          <Stack.Screen name="settings/security" />
+          <Stack.Screen name="settings/notifications" />
+          <Stack.Screen name="settings/privacy" />
+          <Stack.Screen name="settings/language" />
+        </Stack.Protected>
+        <Stack.Protected guard={!isAuthenticated}>
+          <Stack.Screen name="login" options={{ animation: 'fade' }} />
+        </Stack.Protected>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="oauth" />
       </Stack>
     </>
   );
 }
 
-/** Polices embarquées (aucun téléchargement) et jetons chargés avant le premier écran. */
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    JetBrainsMono_400Regular,
-    JetBrainsMono_500Medium,
-    JetBrainsMono_600SemiBold,
-  });
-  const [tokensLoaded, setTokensLoaded] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
 
   useEffect(() => {
-    void tokenStore.hydrate().finally(() => setTokensLoaded(true));
+    void tokenStore.hydrate().finally(() => setReady(true));
   }, []);
 
-  const ready = fontsLoaded && tokensLoaded;
-  useEffect(() => {
-    if (ready) void SplashScreen.hideAsync();
-  }, [ready]);
+  // Le splash animé reprend exactement l'image du splash natif : on cache ce dernier dès qu'il est peint.
+  const onSplashLayout = useCallback(() => void SplashScreen.hideAsync(), []);
 
-  if (!ready) return null;
   return (
-    <AppProviders>
-      <Navigator />
-    </AppProviders>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <LangProvider>
+        <ThemeProvider>
+          <DataSaverProvider>
+            {ready ? (
+              <SessionProvider>
+                <ToastProvider>
+                  <Navigator />
+                </ToastProvider>
+              </SessionProvider>
+            ) : null}
+            {splashDone ? null : (
+              <AnimatedSplash ready={ready} onFinish={() => setSplashDone(true)} onLayout={onSplashLayout} />
+            )}
+          </DataSaverProvider>
+        </ThemeProvider>
+        </LangProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }

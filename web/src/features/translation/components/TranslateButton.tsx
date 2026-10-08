@@ -6,6 +6,7 @@ import { Languages, Lightbulb } from 'lucide-react';
 import { useState } from 'react';
 
 import { api, ApiError, errorMessage, unwrap } from '@/shared/api';
+import { COMPLETE_LOCALES, useLang } from '@/shared/i18n';
 import { cn } from '@/shared/lib';
 import { useSession } from '@/shared/session';
 import { Markdown, pillAction, Spinner } from '@/shared/ui';
@@ -26,14 +27,21 @@ async function waitForTranslation(first: Translation): Promise<Translation> {
 }
 
 /** « Traduire » / « Vulgariser » un contenu ; le résultat est mis en cache côté serveur. */
-export function TranslateButton({ text, className, tinted = false }: { text: string; className?: string; tinted?: boolean }) {
+export function TranslateButton({ text, className, compact = false }: { text: string; className?: string; compact?: boolean }) {
   const { isAuthenticated } = useSession();
+  const { t, locale } = useLang();
   const [result, setResult] = useState<{ mode: Mode; text: string } | null>(null);
 
   const mutation = useMutation({
     mutationFn: async (mode: Mode) => {
-      // Vers la langue du navigateur (français par défaut).
-      const target = navigator.language?.startsWith('en') ? 'en' : 'fr';
+      // Vers la langue de l'interface (les 16 langues traduites) ; sinon navigateur, puis français.
+      type SupportedLang = Schemas['TargetLanguageEnum'];
+      const isSupported = (code: string): code is SupportedLang => (COMPLETE_LOCALES as readonly string[]).includes(code);
+      const target: SupportedLang = isSupported(locale)
+        ? locale
+        : typeof navigator !== 'undefined' && navigator.language?.startsWith('en')
+          ? 'en'
+          : 'fr';
       const first = await unwrap(
         api.POST('/api/translation/', { body: { text, target_language: target, mode } }),
       );
@@ -43,40 +51,41 @@ export function TranslateButton({ text, className, tinted = false }: { text: str
   });
 
   if (!isAuthenticated) return null;
-  // tinted : capsules grises de la barre d'actions d'un post (façon Reddit).
-  const action = cn(pillAction, tinted && 'bg-container text-ink hover:bg-container-high');
+  // compact : icônes seules (pied des cartes du fil), le libellé reste au survol et pour les lecteurs d'écran.
+  const action = cn(pillAction, compact && 'px-1.5 sm:px-2');
+  const labelCls = compact ? 'sr-only' : 'hidden sm:inline';
   return (
     // display: contents : les boutons s'insèrent dans la barre d'actions du parent, la traduction
     // occupe ensuite toute la largeur (basis-full).
     <div className={cn('contents', className)}>
-      <div className={cn('flex items-center', tinted && 'gap-2')}>
+      <div className="flex items-center">
         <button
           type="button"
           onClick={() => (result?.mode === 'translate' ? setResult(null) : mutation.mutate('translate'))}
-          aria-label="Traduire"
-          title="Traduire"
+          aria-label={t('feed.translate')}
+          title={t('feed.translate')}
           className={action}
         >
           <Languages className="size-4" aria-hidden />
-          <span className="hidden sm:inline">{result?.mode === 'translate' ? 'Original' : 'Traduire'}</span>
+          <span className={labelCls}>{result?.mode === 'translate' ? t('feed.original') : t('feed.translate')}</span>
         </button>
         <button
           type="button"
           onClick={() => (result?.mode === 'simplify' ? setResult(null) : mutation.mutate('simplify'))}
-          aria-label="Vulgariser"
-          title="Vulgariser"
+          aria-label={t('feed.simplify')}
+          title={t('feed.simplify')}
           className={action}
         >
           <Lightbulb className="size-4" aria-hidden />
-          <span className="hidden sm:inline">{result?.mode === 'simplify' ? 'Original' : 'Vulgariser'}</span>
+          <span className={labelCls}>{result?.mode === 'simplify' ? t('feed.original') : t('feed.simplify')}</span>
         </button>
         {mutation.isPending ? <Spinner className="size-3.5 text-ink-faint" /> : null}
       </div>
       {mutation.isError ? <p className="basis-full text-body-sm text-danger">{errorMessage(mutation.error)}</p> : null}
       {result ? (
-        <div className="mt-1 basis-full rounded-xl bg-tertiary-soft/50 p-3.5">
-          <p className="mb-1 text-label-md font-bold text-on-tertiary-soft">
-            {result.mode === 'translate' ? 'Traduction IA' : 'Version vulgarisée par l’IA'}
+        <div className="mt-1 basis-full rounded-lg border border-tertiary/20 bg-tertiary-soft/60 p-3.5">
+          <p className="mb-1 text-label-md font-semibold text-on-tertiary-soft">
+            {result.mode === 'translate' ? t('feed.translation_ai') : t('feed.simplify_ai')}
           </p>
           <Markdown source={result.text} />
         </div>

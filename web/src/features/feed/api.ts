@@ -16,6 +16,8 @@ export interface FeedFilters {
   kind?: PostKind;
   author?: string;
   tag?: string;
+  /** Slug ou UUID du hub. */
+  hub?: string;
   sort?: FeedSort;
 }
 
@@ -62,6 +64,7 @@ export interface NewPost {
   poll_options?: string[];
   media_id?: string | null;
   tags?: string[];
+  hub_id?: string | null;
 }
 
 export function useCreatePost() {
@@ -85,6 +88,7 @@ export function useCreatePost() {
           poll_options: body.poll_options,
           media_id: null,
           tags: body.tags,
+          hub_id: input.hub_id ?? null,
         },
         label: `Post : ${(input.title || input.body).slice(0, 40)}`,
       });

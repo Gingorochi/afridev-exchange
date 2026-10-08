@@ -57,3 +57,28 @@ def project_stats(*, since) -> dict:
         "recruiting": projects.filter(is_recruiting=True).count(),
         "sync_errors": projects.exclude(sync_error="").count(),
     }
+
+
+def project_summaries(*, project_ids) -> dict:
+    """{project_id: {title, excerpt, author_id, created_at, stars}} (épinglés du profil)."""
+    return {
+        p.id: {
+            "title": p.name,
+            "excerpt": p.description[:200],
+            "author_id": p.owner_id,
+            "created_at": p.created_at,
+            "stars": p.stars,
+        }
+        for p in Project.objects.alive().filter(id__in=list(project_ids))
+    }
+
+
+def export_for_user(*, user_id) -> dict:
+    """Données personnelles (export RGPD)."""
+    return {
+        "projects": list(
+            Project.objects.filter(owner_id=user_id).values(
+                "id", "name", "description", "repo_url", "tags", "created_at", "deleted_at"
+            )
+        )
+    }

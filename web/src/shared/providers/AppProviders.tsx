@@ -1,6 +1,7 @@
 'use client';
 
 import { DataSaverSync } from '@/shared/data-saver';
+import { LangProvider } from '@/shared/i18n';
 import { OutboxSync, PowerSyncProvider } from '@/shared/offline';
 import { QueryProvider } from '@/shared/query';
 import { SessionProvider } from '@/shared/session';
@@ -14,10 +15,12 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <SessionProvider>
         <PowerSyncProvider>
           <ToastProvider>
-            <ThemeSync />
-            <DataSaverSync />
-            <OutboxSync />
-            {children}
+            <LangProvider>
+              <ThemeSync />
+              <DataSaverSync />
+              <OutboxSync />
+              {children}
+            </LangProvider>
           </ToastProvider>
         </PowerSyncProvider>
       </SessionProvider>

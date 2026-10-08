@@ -1,132 +1,101 @@
-/** Jetons du design mobile « Warm Tech Mutualism » (maquette Stitch, DESIGN.md). */
-import { Platform, type TextStyle } from 'react-native';
+import { Platform } from 'react-native';
 
+/**
+ * Jetons de couleur identiques à web/src/styles/globals.css : neutres zinc, terre cuite AfriDev
+ * en accent. Uniquement des aplats (aucun dégradé), filets fins plutôt qu'ombres.
+ */
 export const light = {
-  // Fond gris chaud + cartes blanches : les blocs se détachent (même système que le web).
-  canvas: '#F3F1ED',
-  card: '#FFFFFF',
-  container: '#F0EDE9',
-  containerHigh: '#E7E3DE',
-  border: '#E5E1DB',
-  borderStrong: '#CFC8BF',
-  ink: '#191817',
-  inkMuted: '#5D5650',
-  inkFaint: '#8E8780',
+  background: '#FFFFFF',
+  surface: '#FAFAFA',
+  container: '#F0F0F2',
+  containerHigh: '#E7E7EA',
+  pressed: '#F4F4F5',
+  line: '#E6E6E9',
+  lineStrong: '#D0D0D6',
+  ink: '#0A0A0B',
+  inkMuted: '#52525B',
+  inkFaint: '#75757E',
 
-  // Valeurs identiques à web/src/styles/globals.css.
-  primary: '#C84B20', // terre cuite
-  primaryPressed: '#B44018',
+  primary: '#C84B20',
+  primaryPressed: '#B2401A',
   primaryInk: '#A63306',
-  primarySoft: '#FFDBD0',
+  primarySoft: '#FCEBE4',
   onPrimary: '#FFFFFF',
 
-  secondary: '#1B5E3A', // émeraude
-  secondaryHover: '#14462B',
-  secondaryInk: '#1B5E3A',
-  secondarySoft: '#D8F5E2',
-  secondaryMint: '#D8F5E2',
+  secondary: '#1A7F4B',
+  secondaryInk: '#17663D',
+  secondarySoft: '#E3F6EA',
 
-  tertiary: '#B45309', // ocre
-  tertiarySoft: '#FFE7D6',
-  onTertiarySoft: '#763300',
+  tertiary: '#B45309',
+  tertiarySoft: '#FDF0E1',
 
-  danger: '#BA1A1A',
-  dangerSoft: '#FFDAD6',
-  onDangerSoft: '#93000A',
+  downvote: '#6A5CFF',
+  downvoteSoft: '#ECEBFF',
 
-  codeBg: '#1F1E1C',
-  codeLine: '#2C2A27',
-  codeInk: '#EBE7E2',
-  codeFaint: '#8E8984',
-  scrim: 'rgba(26, 25, 24, 0.45)',
+  danger: '#D1242F',
+  dangerSoft: '#FFEBE9',
+
+  codeBg: '#0D1117',
+  codeInk: '#E6EDF3',
+  scrim: 'rgba(10, 10, 11, 0.4)',
 };
 
 export type Palette = typeof light;
 
 export const dark: Palette = {
-  canvas: '#0B0E10',
-  card: '#15191C',
-  container: '#20262A',
-  containerHigh: '#283035',
-  border: '#262D32',
-  borderStrong: '#39434A',
-  ink: '#EEF0F1',
-  inkMuted: '#B0B8BD',
-  inkFaint: '#7F8A91',
+  background: '#09090B',
+  surface: '#111113',
+  container: '#1B1B1F',
+  containerHigh: '#242429',
+  pressed: '#18181B',
+  line: '#232328',
+  lineStrong: '#34343B',
+  ink: '#EDEDEF',
+  inkMuted: '#A1A1AA',
+  inkFaint: '#7A7A83',
 
-  primary: '#C84B20',
-  primaryPressed: '#D9592B',
-  primaryInk: '#FF9A78',
-  primarySoft: '#3A1A10',
+  primary: '#D4572A',
+  primaryPressed: '#E06535',
+  primaryInk: '#FF9B76',
+  primarySoft: '#2B1710',
   onPrimary: '#FFFFFF',
 
-  secondary: '#23774A',
-  secondaryHover: '#2B8A57',
-  secondaryInk: '#7FD4A8',
-  secondarySoft: '#12301F',
-  secondaryMint: '#12301F',
+  secondary: '#23874F',
+  secondaryInk: '#6FD59C',
+  secondarySoft: '#0F2A1B',
 
   tertiary: '#D97706',
-  tertiarySoft: '#3A2412',
-  onTertiarySoft: '#FFB68E',
+  tertiarySoft: '#2F1F0D',
 
-  danger: '#FF6B5E',
-  dangerSoft: '#3B1414',
-  onDangerSoft: '#FFB4AB',
+  downvote: '#8B80FF',
+  downvoteSoft: '#1F1D3D',
 
-  codeBg: '#0B0F11',
-  codeLine: '#1B2226',
-  codeInk: '#F2EDE8',
-  codeFaint: '#8E8680',
+  danger: '#FF6A69',
+  dangerSoft: '#2F1214',
+
+  codeBg: '#0A0D12',
+  codeInk: '#E6EDF3',
   scrim: 'rgba(0, 0, 0, 0.6)',
 };
 
-export const fonts = {
-  regular: 'PlusJakartaSans_400Regular',
-  medium: 'PlusJakartaSans_500Medium',
-  semibold: 'PlusJakartaSans_600SemiBold',
-  bold: 'PlusJakartaSans_700Bold',
-  mono: 'JetBrainsMono_500Medium',
-  monoRegular: 'JetBrainsMono_400Regular',
-  monoBold: 'JetBrainsMono_600SemiBold',
+/** Couleurs de fond des avatars sans photo (déduites du nom, comme sur le web). */
+export const AVATAR_COLORS = ['#C84B20', '#1A7F4B', '#B45309', '#7C3AED', '#0E7490', '#2563EB'];
+
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+export const radius = { sm: 6, md: 10, lg: 14, pill: 999 } as const;
+
+export const mono = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' });
+
+/** Échelle typographique (police système : nette et sans téléchargement). */
+export const typography = {
+  display: { fontSize: 26, lineHeight: 32, fontWeight: '700' },
+  title: { fontSize: 20, lineHeight: 26, fontWeight: '700' },
+  headline: { fontSize: 17, lineHeight: 23, fontWeight: '600' },
+  body: { fontSize: 15, lineHeight: 22, fontWeight: '400' },
+  bodyStrong: { fontSize: 15, lineHeight: 22, fontWeight: '600' },
+  small: { fontSize: 13, lineHeight: 18, fontWeight: '400' },
+  smallStrong: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: '500' },
 } as const;
 
-/**
- * Échelle typographique (corps jamais sous 16 px : lisible en plein soleil).
- * Une seule famille (Plus Jakarta Sans) : `mono` / `monoSm` servent aux méta-informations
- * (dates, compteurs, tags) en sans-serif ; le monospace est réservé au code (`code`).
- */
-export const type = {
-  headlineXl: { fontFamily: fonts.bold, fontSize: 26, lineHeight: 32, letterSpacing: -0.5 },
-  headlineLg: { fontFamily: fonts.bold, fontSize: 21, lineHeight: 27, letterSpacing: -0.3 },
-  headlineMd: { fontFamily: fonts.semibold, fontSize: 17, lineHeight: 23, letterSpacing: -0.1 },
-  bodyLg: { fontFamily: fonts.regular, fontSize: 17, lineHeight: 25 },
-  body: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 23 },
-  bodyMedium: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 22 },
-  label: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 18 },
-  small: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20 },
-  mono: { fontFamily: fonts.medium, fontSize: 14, lineHeight: 19 },
-  monoSm: { fontFamily: fonts.medium, fontSize: 12, lineHeight: 16 },
-  code: { fontFamily: fonts.monoRegular, fontSize: 13, lineHeight: 20 },
-} as const;
-
-export type TypeVariant = keyof typeof type;
-
-export const space = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, gutter: 16, margin: 20 } as const;
-
-export const radius = { sm: 4, md: 8, lg: 12, xl: 16, sheet: 24, full: 9999 } as const;
-
-/** Ombre des cartes du web (`shadow-card` : 0 1px 2px rgba(25,24,23,0.05)). */
-export const cardShadow = Platform.select({
-  web: { boxShadow: '0 1px 2px rgba(25, 24, 23, 0.05)' },
-  default: { shadowColor: '#191817', shadowOpacity: 0.06, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-}) as object;
-
-/**
- * Cible web d'Expo seulement : retire le contour navigateur des champs, dont le cadre
- * indique déjà le focus. Sans effet sur iOS et Android.
- */
-export const noFocusRing = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as TextStyle;
-
-/** Cible tactile minimale (DESIGN.md) : 48 x 48. */
-export const HIT = 48;
+export type TypeVariant = keyof typeof typography;

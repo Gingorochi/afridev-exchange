@@ -9,7 +9,7 @@ export function Skeleton({ className }: { className?: string }) {
 
 export function CardSkeleton({ lines = 3 }: { lines?: number }) {
   return (
-    <div className="space-y-3 rounded-xl border border-line bg-card p-4 shadow-card" aria-busy>
+    <div className="space-y-3 rounded-2xl border border-line bg-card p-4 shadow-card sm:p-5" aria-busy>
       <div className="flex items-center gap-3">
         <Skeleton className="size-8 rounded-full" />
         <div className="flex-1 space-y-2">
@@ -40,11 +40,11 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center gap-3 rounded-xl border border-line bg-card px-6 py-12 text-center shadow-card',
+        'flex flex-col items-center gap-3 rounded-2xl border border-dashed border-line-strong bg-card px-6 py-12 text-center',
         className,
       )}
     >
-      <span className="flex size-14 items-center justify-center rounded-full bg-container text-ink-faint">
+      <span className="flex size-12 items-center justify-center rounded-2xl border border-line bg-container-low text-ink-faint [&_svg]:size-6">
         {icon ?? <Inbox className="size-7" aria-hidden />}
       </span>
       <h3 className="text-headline-md text-ink">{title}</h3>
@@ -64,7 +64,7 @@ export function ErrorNotice({
   action?: React.ReactNode;
 }) {
   return (
-    <div role="alert" className="flex items-start gap-3 rounded-xl border border-danger/25 bg-danger-soft p-4 text-on-danger-soft">
+    <div role="alert" className="flex items-start gap-3 rounded-2xl border border-danger/25 bg-danger-soft p-4 text-on-danger-soft">
       <AlertTriangle className="mt-0.5 size-5 shrink-0" aria-hidden />
       <div className="min-w-0 flex-1 space-y-1">
         <p className="font-semibold">{title}</p>

@@ -1,59 +1,60 @@
 'use client';
 
 import { postSchema } from '@afridev/validation';
-import { BarChart3, Check, ChevronDown, ImageIcon, Plus, Search, Send, Type, Video, X } from 'lucide-react';
+import { BarChart3, Check, ImageIcon, Plus, Send, Type, Video, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 
+import { HubPicker, type PickedHub, toPickedHub, useHub } from '@/features/hubs';
 import { errorMessage } from '@/shared/api';
 import { DraftStatus, useAutosaveDraft } from '@/shared/drafts';
 import { TwoColumns } from '@/shared/layout';
 import { type MediaAsset, uploadMedia } from '@/shared/media';
 import { SecretAlert, useSecretScan } from '@/shared/security-guard';
-import {
-  Button,
-  CommunityIcon,
-  Field,
-  Input,
-  MarkdownEditor,
-  Menu,
-  SideCard,
-  Tabs,
-  TagInput,
-  useCloseMenu,
-  useToast,
-} from '@/shared/ui';
+import { Button, Field, Input, MarkdownEditor, SideCard, Tabs, TagInput, useToast } from '@/shared/ui';
 
-import { type PostKind, useCommunities, useCreatePost } from '../api';
+import { type PostKind, useCreatePost } from '../api';
 
 type Mode = 'text' | 'media' | 'poll';
 
 interface Draft {
   mode: Mode;
-  community: string;
+  hub: PickedHub | null;
   title: string;
   body: string;
   options: string[];
   tags: string[];
 }
 
-const EMPTY: Draft = { mode: 'text', community: '', title: '', body: '', options: ['', ''], tags: [] };
+const EMPTY: Draft = { mode: 'text', hub: null, title: '', body: '', options: ['', ''], tags: [] };
 
-/** « Créer un post » façon Reddit : communauté, onglets de format, titre obligatoire. */
+/** Brouillon enregistré avant les hubs : son ancienne « communauté » redevient un tag. */
+function restore(saved: Partial<Draft> & { community?: string }): Draft {
+  const { community, ...rest } = saved;
+  const tags = community ? [community, ...(rest.tags ?? [])] : (rest.tags ?? []);
+  return { ...EMPTY, ...rest, tags: [...new Set(tags)].slice(0, 5) };
+}
+
+/** « Créer un post » : hub (facultatif), onglets de format, titre obligatoire. */
 export function SubmitScreen() {
   const params = useSearchParams();
   const router = useRouter();
   const toast = useToast();
   const create = useCreatePost();
-  const initial: Draft = { ...EMPTY, community: params.get('tag') ?? '' };
+  const hubSlug = params.get('hub') ?? '';
+  const presetHub = useHub(hubSlug);
+  const initial: Draft = { ...EMPTY, tags: params.get('tag') ? [params.get('tag')!] : [] };
   const [draft, setDraft] = useState<Draft>(initial);
   const [media, setMedia] = useState<MediaAsset | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const autosave = useAutosaveDraft<Draft>('post:submit', draft, (restored) => setDraft({ ...EMPTY, ...restored }));
+  const autosave = useAutosaveDraft<Draft>('post:submit', draft, (restored) => setDraft(restore(restored)));
   const findings = useSecretScan(draft.title, draft.body, ...draft.options);
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((current) => ({ ...current, [key]: value }));
+  // Arrivée depuis la page d'un hub (?hub=<slug>) : il est proposé tant qu'aucun autre n'est choisi.
+  const [hubTouched, setHubTouched] = useState(false);
+  const hub = draft.hub ?? (!hubTouched && presetHub.data ? toPickedHub(presetHub.data) : null);
   const kind: PostKind = draft.mode === 'poll' ? 'poll' : draft.mode === 'media' ? (media?.kind === 'video' ? 'short' : 'image') : 'text';
 
   async function onFile(file: File | undefined) {
@@ -75,7 +76,7 @@ export function SubmitScreen() {
       setError('Donnez un titre à votre post.');
       return;
     }
-    const tags = [draft.community, ...draft.tags].filter(Boolean);
+    const tags = draft.tags.filter(Boolean);
     const parsed = postSchema.safeParse({
       kind,
       title: draft.title,
@@ -96,13 +97,14 @@ export function SubmitScreen() {
         poll_options: parsed.data.pollOptions,
         media_id: parsed.data.mediaId ?? null,
         tags: parsed.data.tags,
+        hub_id: hub?.id ?? null,
       });
       await autosave.clear();
       toast(
         outcome.queued ? 'Hors ligne : votre post partira au retour du réseau.' : 'Post publié.',
         outcome.queued ? 'queued' : 'success',
       );
-      router.push(!outcome.queued ? `/feed/${outcome.result.id}` : draft.community ? `/feed?tag=${encodeURIComponent(draft.community)}` : '/feed');
+      router.push(!outcome.queued ? `/feed/${outcome.result.id}` : hub ? `/h/${hub.slug}` : '/feed');
     } catch (e) {
       setError(errorMessage(e));
     }
@@ -112,7 +114,13 @@ export function SubmitScreen() {
     <TwoColumns aside={<PostingRules />}>
       <h1 className="text-headline-xl text-ink">Créer un post</h1>
 
-      <CommunityPicker value={draft.community} onChange={(community) => set('community', community)} />
+      <HubPicker
+        value={hub}
+        onChange={(picked) => {
+          setHubTouched(true);
+          set('hub', picked);
+        }}
+      />
 
       <Tabs<Mode>
         value={draft.mode}
@@ -219,8 +227,8 @@ export function SubmitScreen() {
         placeholder="Détaillez : contexte, code (```), ce que vous avez essayé…"
       />
 
-      <Field label="Tags supplémentaires" hint="Jusqu’à 4 : langages, outils, opérateurs (wave, flutter…)">
-        <TagInput value={draft.tags} max={4} onChange={(tags) => set('tags', tags)} />
+      <Field label="Tags" hint="Jusqu’à 5 : langages, outils, opérateurs (wave, flutter…)">
+        <TagInput value={draft.tags} max={5} onChange={(tags) => set('tags', tags)} />
       </Field>
 
       <SecretAlert findings={findings} />
@@ -247,101 +255,13 @@ export function SubmitScreen() {
   );
 }
 
-/** Choix de la communauté (premier tag du post), avec recherche et création libre. */
-function CommunityPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const communities = useCommunities(20);
-  const [query, setQuery] = useState('');
-  const typed = query.trim().toLowerCase().replace(/^d\//, '').replace(/[^a-z0-9-]/g, '-').slice(0, 30);
-  const matches = (communities.data ?? []).filter((community) => community.tag.includes(typed));
-  return (
-    <Menu
-      align="start"
-      className="w-80 p-2"
-      trigger={(props) => (
-        <button
-          type="button"
-          {...props}
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-container pr-3 pl-1.5 text-body-md font-semibold text-ink hover:bg-container-high"
-        >
-          {value ? <CommunityIcon tag={value} size={32} /> : <span className="flex size-8 items-center justify-center rounded-full bg-card"><Search className="size-4 text-ink-muted" aria-hidden /></span>}
-          {value ? `d/${value}` : 'Choisir une communauté'}
-          <ChevronDown className="size-4 text-ink-muted" aria-hidden />
-        </button>
-      )}
-    >
-      <CommunityChoices
-        query={query}
-        onQuery={setQuery}
-        typed={typed}
-        matches={matches.map((community) => community.tag)}
-        onPick={(tag) => {
-          onChange(tag);
-          setQuery('');
-        }}
-      />
-    </Menu>
-  );
-}
-
-function CommunityChoices({
-  query,
-  onQuery,
-  typed,
-  matches,
-  onPick,
-}: {
-  query: string;
-  onQuery: (value: string) => void;
-  typed: string;
-  matches: string[];
-  onPick: (tag: string) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <Input autoFocus value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Rechercher ou créer (ex. wave)" aria-label="Communauté" />
-      <ul className="max-h-64 overflow-y-auto">
-        {typed && !matches.includes(typed) ? (
-          <li>
-            <MenuButton onClick={() => onPick(typed)}>
-              <CommunityIcon tag={typed} size={28} /> Publier dans d/{typed} <span className="ml-auto text-body-sm text-ink-faint">nouvelle</span>
-            </MenuButton>
-          </li>
-        ) : null}
-        {matches.map((tag) => (
-          <li key={tag}>
-            <MenuButton onClick={() => onPick(tag)}>
-              <CommunityIcon tag={tag} size={28} /> d/{tag}
-            </MenuButton>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function MenuButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
-  const close = useCloseMenu();
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        onClick();
-        close();
-      }}
-      className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-body-md font-medium text-ink hover:bg-container"
-    >
-      {children}
-    </button>
-  );
-}
-
 /** Règles de publication (colonne de droite), comme celles d'un subreddit. */
 function PostingRules() {
   const rules = [
     ['Un titre qui dit tout', 'Le problème ou l’astuce en une phrase : on doit comprendre sans ouvrir.'],
     ['Jamais de secret en clair', 'Clés d’API, jetons, mots de passe : le Security Guard bloque l’envoi.'],
     ['Du code lisible', 'Entourez-le de ``` avec le langage, et réduisez-le à l’essentiel.'],
-    ['La bonne communauté', 'd/wave, d/flutter… : elle aide les bonnes personnes à vous trouver.'],
+    ['Le bon hub', 'h/python-afrique, h/mobile-money… : il aide les bonnes personnes à vous trouver.'],
     ['Bienveillance', 'Pas de moqueries sur le niveau : tout le monde a débuté.'],
   ];
   return (

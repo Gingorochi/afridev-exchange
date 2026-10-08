@@ -10,7 +10,14 @@ from core.pagination import CursorPagination
 from core.schema import CURSOR_PARAMETERS, paginated
 
 from .. import selectors, services
-from .serializers import DeviceInputSerializer, NotificationSerializer, UnreadCountSerializer
+from .serializers import (
+    DeviceInputSerializer,
+    NotificationSerializer,
+    PreferencesSerializer,
+    PreferencesUpdateSerializer,
+    UnreadCountSerializer,
+    present_preferences,
+)
 
 
 class NotificationListView(APIView):
@@ -26,6 +33,26 @@ class NotificationListView(APIView):
         )
         return paginator.get_paginated_response(NotificationSerializer(page, many=True).data)
 
+    @extend_schema(operation_id="notifications_clear", request=None, responses={204: None})
+    def delete(self, request):
+        """Efface toutes les notifications du membre."""
+        services.clear_all(user=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _get_or_404(request, notification_id):
+    notification = selectors.get_notification(user=request.user, notification_id=notification_id)
+    if notification is None:
+        raise NotFound("Notification introuvable.")
+    return notification
+
+
+class NotificationDetailView(APIView):
+    @extend_schema(operation_id="notifications_destroy", request=None, responses={204: None})
+    def delete(self, request, notification_id):
+        services.delete_notification(notification=_get_or_404(request, notification_id))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class UnreadCountView(APIView):
     @extend_schema(responses=UnreadCountSerializer)
@@ -36,11 +63,7 @@ class UnreadCountView(APIView):
 class MarkReadView(APIView):
     @extend_schema(request=None, responses=NotificationSerializer)
     def post(self, request, notification_id):
-        notification = selectors.get_notification(
-            user=request.user, notification_id=notification_id
-        )
-        if notification is None:
-            raise NotFound("Notification introuvable.")
+        notification = _get_or_404(request, notification_id)
         return Response(NotificationSerializer(services.mark_read(notification=notification)).data)
 
 
@@ -65,3 +88,18 @@ class DeviceView(APIView):
         data.is_valid(raise_exception=True)
         services.unregister_device(user=request.user, token=data.validated_data["token"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PreferencesView(APIView):
+    """Réglages > Notifications : types reçus, push et e-mail."""
+
+    @extend_schema(responses=PreferencesSerializer)
+    def get(self, request):
+        return Response(present_preferences(selectors.get_preferences(user=request.user)))
+
+    @extend_schema(request=PreferencesUpdateSerializer, responses=PreferencesSerializer)
+    def patch(self, request):
+        data = PreferencesUpdateSerializer(data=request.data, partial=True)
+        data.is_valid(raise_exception=True)
+        preference = services.update_preferences(user=request.user, **data.validated_data)
+        return Response(present_preferences(preference))

@@ -18,3 +18,11 @@ def unread_count(*, user) -> int:
 
 def get_notification(*, user, notification_id) -> Notification | None:
     return list_notifications(user=user).filter(id=notification_id).first()
+
+
+def get_preferences(*, user):
+    from .models import NotificationPreference
+
+    return NotificationPreference.objects.filter(user=user).first() or NotificationPreference(
+        user=user
+    )

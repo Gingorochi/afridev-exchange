@@ -80,7 +80,16 @@ export function errorMessage(error: unknown): string {
 
 type Job = components['schemas']['Job'];
 
-export function createAfriDevClient({ baseUrl, tokens }: { baseUrl: string; tokens: TokenStorage }) {
+export function createAfriDevClient({
+  baseUrl,
+  tokens,
+  timeoutMs,
+}: {
+  baseUrl: string;
+  tokens: TokenStorage;
+  /** Au-delà, la requête est abandonnée (réseau mobile instable) : erreur « network ». */
+  timeoutMs?: number;
+}) {
   let refreshing: Promise<string | null> | null = null;
 
   /** Un seul renouvellement à la fois, même si plusieurs requêtes reçoivent un 401. */
@@ -113,10 +122,14 @@ export function createAfriDevClient({ baseUrl, tokens }: { baseUrl: string; toke
   async function send(url: string, init: RequestInit, token: string | null): Promise<Response> {
     const headers = new Headers(init.headers);
     if (token) headers.set('Authorization', `Bearer ${token}`);
+    const controller = timeoutMs ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
     try {
-      return await fetch(url, { ...init, headers });
+      return await fetch(url, { ...init, headers, ...(controller ? { signal: controller.signal } : {}) });
     } catch {
       throw networkError();
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 

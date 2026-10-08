@@ -4,6 +4,8 @@ Les vues sont des APIView : spectacular ne voit pas la pagination par curseur,
 on décrit donc explicitement la forme {next, previous, results} et le paramètre `cursor`.
 """
 
+from functools import cache
+
 from drf_spectacular.utils import OpenApiParameter, inline_serializer
 from rest_framework import serializers
 
@@ -13,7 +15,9 @@ CURSOR_PARAMETERS = [
 ]
 
 
+@cache
 def paginated(serializer_class):
+    """Une seule enveloppe par sérialiseur : deux vues peuvent paginer la même forme."""
     name = serializer_class.__name__.removesuffix("Serializer")
     return inline_serializer(
         name=f"Paginated{name}List",

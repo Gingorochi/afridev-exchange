@@ -1,10 +1,10 @@
 """Lectures. Seul point d'entrée en lecture pour les autres features."""
 
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Count, F, Q, QuerySet
 
 from core.stats import count_per_day, merge_daily
 
-from .models import Answer, Question
+from .models import Answer, AnswerVote, Question
 
 
 def list_questions(
@@ -13,8 +13,11 @@ def list_questions(
     author_id=None,
     resolved: bool | None = None,
     query: str | None = None,
+    hub_id=None,
 ) -> QuerySet[Question]:
     questions = Question.objects.alive()
+    if hub_id:
+        questions = questions.filter(hub_id=hub_id)
     if tag:
         questions = questions.filter(tags__icontains=f'"{tag.lower()}"')
     if author_id:
@@ -94,3 +97,74 @@ def tag_counts(*, since) -> dict[str, int]:
         for tag in tags or []:
             counts[tag] = counts.get(tag, 0) + 1
     return counts
+
+
+def question_summaries(*, question_ids) -> dict:
+    """{question_id: {title, excerpt, author_id, created_at, is_resolved}}."""
+    rows = Question.objects.alive().filter(id__in=list(question_ids))
+    return {
+        q.id: {
+            "title": q.title,
+            "excerpt": q.body[:200],
+            "author_id": q.author_id,
+            "created_at": q.created_at,
+            "is_resolved": q.is_resolved,
+        }
+        for q in rows
+    }
+
+
+def _accepted_answers(author_id):
+    # Une réponse acceptée à sa propre question ne compte pas (pas d'auto-récompense).
+    return (
+        Answer.objects.alive()
+        .filter(author_id=author_id, is_accepted=True, question__deleted_at__isnull=True)
+        .exclude(question__author_id=author_id)
+    )
+
+
+def accepted_answer_count(*, author_id) -> int:
+    return _accepted_answers(author_id).count()
+
+
+def accepted_answer_tags(*, author_id) -> dict[str, int]:
+    """{tag: réponses acceptées sur des questions portant ce tag} (badges « Expert … »)."""
+    counts: dict[str, int] = {}
+    for tags in _accepted_answers(author_id).values_list("question__tags", flat=True):
+        for tag in tags or []:
+            counts[tag] = counts.get(tag, 0) + 1
+    return counts
+
+
+def accepted_counts_by_author() -> dict:
+    """{author_id: réponses acceptées} pour tous les membres (classement « Top 5 % »)."""
+    rows = (
+        Answer.objects.alive()
+        .filter(is_accepted=True, question__deleted_at__isnull=True)
+        .exclude(question__author_id=F("author_id"))
+        .values("author_id")
+        .annotate(total=Count("id"))
+    )
+    return {row["author_id"]: row["total"] for row in rows}
+
+
+def answer_upvotes_received(*, author_id) -> int:
+    return AnswerVote.objects.filter(
+        answer__author_id=author_id, answer__deleted_at__isnull=True, value=1
+    ).count()
+
+
+def export_for_user(*, user_id) -> dict:
+    """Données personnelles (export RGPD)."""
+    return {
+        "questions": list(
+            Question.objects.filter(author_id=user_id).values(
+                "id", "title", "body", "tags", "hub_id", "is_resolved", "created_at", "deleted_at"
+            )
+        ),
+        "answers": list(
+            Answer.objects.filter(author_id=user_id).values(
+                "id", "question_id", "body", "is_accepted", "score", "created_at", "deleted_at"
+            )
+        ),
+    }

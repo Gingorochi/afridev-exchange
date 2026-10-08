@@ -23,7 +23,6 @@ class ProjectRecommendationSerializer(serializers.Serializer):
 
 
 class CandidateSerializer(AuthorSerializer):
-    stack = serializers.ListField(child=serializers.CharField())
     open_to_work = serializers.BooleanField()
 
 
@@ -80,6 +79,9 @@ def candidate_card(profile) -> dict:
         "username": profile.username,
         "display_name": profile.display_name or profile.username,
         "avatar_url": profile.avatar_url,
+        "location": profile.location,
         "stack": profile.stack,
+        "karma": profile.karma_score,
+        "badges": [{"code": b["code"], "label": b["label"]} for b in profile.badges[:2]],
         "open_to_work": profile.open_to_work,
     }

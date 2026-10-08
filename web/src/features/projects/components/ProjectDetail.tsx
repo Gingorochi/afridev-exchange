@@ -9,7 +9,19 @@ import { ProjectGuide } from '@/features/onboarding-agent';
 import { TwoColumns } from '@/shared/layout';
 import { formatCount } from '@/shared/lib';
 import { useSession } from '@/shared/session';
-import { Avatar, Button, ButtonLink, buttonClasses, Card, CardSkeleton, ErrorNotice, StatusBadge, Tag, TimeAgo } from '@/shared/ui';
+import {
+  Avatar,
+  Button,
+  ButtonLink,
+  buttonClasses,
+  Card,
+  CardSkeleton,
+  ErrorNotice,
+  profileColorHex,
+  StatusBadge,
+  Tag,
+  TimeAgo,
+} from '@/shared/ui';
 
 import { type Project, useIssues, useProject, useProjectActions } from '../api';
 import { repoSlug } from './ProjectCard';
@@ -41,13 +53,16 @@ function ProjectView({ project, mine }: { project: Project; mine: boolean }) {
   return (
     <>
       <Card className="overflow-hidden">
-        <div
-          className="h-24 bg-[linear-gradient(120deg,var(--secondary)_0%,var(--secondary-hover)_45%,var(--tertiary)_100%)] sm:h-28"
-          aria-hidden
-        />
+        <div className="relative h-24 sm:h-28" style={{ backgroundColor: profileColorHex(project.name) }} aria-hidden>
+          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.2)_1px,transparent_1.2px)] bg-[length:14px_14px] [mask-image:linear-gradient(105deg,transparent_10%,black_75%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/15" />
+        </div>
         <div className="px-4 pb-5 sm:px-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <span className="-mt-10 flex size-20 items-center justify-center rounded-2xl border-4 border-card bg-secondary text-[2rem] font-bold text-white shadow-card">
+            <span
+              className="-mt-10 flex size-20 items-center justify-center rounded-2xl border-4 border-card text-[2rem] font-bold text-white shadow-card"
+              style={{ backgroundColor: profileColorHex(project.name) }}
+            >
               {project.name.slice(0, 1).toUpperCase()}
             </span>
             <div className="flex flex-wrap gap-2 pt-3">

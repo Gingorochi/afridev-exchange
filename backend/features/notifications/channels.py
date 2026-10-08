@@ -8,7 +8,7 @@ from django.core.mail import send_mail
 
 from integrations import push
 
-from .models import Notification, PushDevice
+from .models import Notification, NotificationPreference, PushDevice
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,14 @@ def send_realtime(notification: Notification) -> None:
     )
 
 
+def _channel_enabled(notification: Notification, channel: str) -> bool:
+    preference = NotificationPreference.objects.filter(user_id=notification.recipient_id).first()
+    return preference is None or getattr(preference, f"{channel}_enabled")
+
+
 def send_push(notification: Notification) -> None:
+    if not _channel_enabled(notification, "push"):
+        return
     tokens = list(
         PushDevice.objects.filter(user_id=notification.recipient_id).values_list("token", flat=True)
     )
@@ -67,7 +74,7 @@ def send_push(notification: Notification) -> None:
 
 
 def send_email(notification: Notification) -> None:
-    if notification.kind not in EMAIL_KINDS:
+    if notification.kind not in EMAIL_KINDS or not _channel_enabled(notification, "email"):
         return
     email = notification.recipient.email
     if not email:

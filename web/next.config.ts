@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Pas de AGENTS.md / CLAUDE.md générés automatiquement par « next dev ».
   agentRules: false,
-  transpilePackages: ['@afridev/api-client', '@afridev/sync-schema', '@afridev/validation'],
+  transpilePackages: ['@afridev/api-client', '@afridev/i18n', '@afridev/sync-schema', '@afridev/validation'],
   images: {
     formats: ['image/avif', 'image/webp'],
   },

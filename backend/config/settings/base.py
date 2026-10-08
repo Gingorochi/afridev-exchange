@@ -49,6 +49,9 @@ INSTALLED_APPS = [
     "features.notifications",
     "features.moderation",
     "features.backoffice",
+    "features.hubs",
+    "features.bookmarks",
+    "features.jobs_events",
 ]
 
 MIDDLEWARE = [
@@ -136,7 +139,9 @@ CHANNEL_LAYERS = {
 # ── API ──
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # Jetons d'accès personnels (afd_…), puis JWT liés à une session révocable.
+        "features.accounts.authentication.PersonalAccessTokenAuthentication",
+        "features.accounts.authentication.SessionJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "core.pagination.CursorPagination",
@@ -155,6 +160,8 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "ROTATE_REFRESH_TOKENS": True,
+    # Refuse le renouvellement d'une session révoquée (réglages > Sécurité & sessions).
+    "TOKEN_REFRESH_SERIALIZER": "features.accounts.api.serializers.SessionTokenRefreshSerializer",
 }
 
 SPECTACULAR_SETTINGS = {
@@ -173,6 +180,11 @@ SPECTACULAR_SETTINGS = {
         "PostKindEnum": "features.feed.models.Post.Kind",
         "MediaKindEnum": "features.media.models.MediaAsset.Kind",
         "NotificationKindEnum": "features.notifications.models.Notification.Kind",
+        "ContractTypeEnum": "features.jobs_events.models.JobOffer.Contract",
+        "EventKindEnum": "features.jobs_events.models.TechEvent.Kind",
+        "TargetTypeEnum": "features.moderation.models.Report.TargetType",
+        "BookmarkTargetTypeEnum": "features.bookmarks.api.serializers.TARGET_TYPES",
+        "PinTargetTypeEnum": "features.profiles.api.serializers.PIN_TYPES",
     },
 }
 
@@ -204,6 +216,11 @@ GITLAB_URL = env("GITLAB_URL", default="https://gitlab.com")
 GITLAB_CLIENT_ID = env("GITLAB_CLIENT_ID", default="")
 GITLAB_CLIENT_SECRET = env("GITLAB_CLIENT_SECRET", default="")
 OAUTH_REDIRECT_URI = env("OAUTH_REDIRECT_URI", default="http://localhost:3000/oauth/callback")
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")
+GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET", default="")
+# Adresse publique de l'API (https://api.exemple.com) : base de l'URL de retour OAuth de
+# l'appli mobile. Vide : déduite de la requête (développement).
+API_PUBLIC_URL = env("API_PUBLIC_URL", default="")
 
 # SMS : Africa's Talking (« sandbox » comme nom d'utilisateur pour les tests).
 SMS_PROVIDER_API_KEY = env("SMS_PROVIDER_API_KEY", default="")

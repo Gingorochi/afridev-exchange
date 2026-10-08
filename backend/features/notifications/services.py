@@ -7,11 +7,19 @@ from core.exceptions import DomainError
 from integrations import push
 
 from . import channels
-from .models import Notification, PushDevice
+from .models import Notification, NotificationPreference, PushDevice
 
 
 @transaction.atomic
 def notify(*, recipient_id, kind: str, title: str, body: str = "", data: dict | None = None):
+    """Crée la notification, sauf si le membre a coupé ce type (renvoie alors None)."""
+    muted = (
+        NotificationPreference.objects.filter(user_id=recipient_id)
+        .values_list("muted_kinds", flat=True)
+        .first()
+    )
+    if muted and kind in muted:
+        return None
     notification = Notification.objects.create(
         recipient_id=recipient_id,
         kind=kind,
@@ -43,6 +51,17 @@ def mark_all_read(*, user) -> int:
     )
 
 
+def delete_notification(*, notification: Notification) -> None:
+    notification.soft_delete()
+
+
+def clear_all(*, user) -> int:
+    """Efface toute la boîte de réception (suppression douce, propagée aux copies locales)."""
+    return Notification.objects.alive().filter(recipient=user).update(
+        deleted_at=timezone.now(), updated_at=timezone.now()
+    )
+
+
 def register_device(*, user, token: str, platform: str = "") -> PushDevice:
     if not push.is_expo_token(token):
         raise DomainError("Jeton Expo invalide.", code="invalid_push_token")
@@ -54,3 +73,22 @@ def register_device(*, user, token: str, platform: str = "") -> PushDevice:
 
 def unregister_device(*, user, token: str) -> None:
     PushDevice.objects.filter(user=user, token=token).delete()
+
+
+def update_preferences(*, user, **fields) -> NotificationPreference:
+    preference, _ = NotificationPreference.objects.get_or_create(user=user)
+    changed = []
+    if fields.get("muted_kinds") is not None:
+        preference.muted_kinds = [
+            kind
+            for kind in dict.fromkeys(fields["muted_kinds"])
+            if kind in Notification.Kind.values
+        ]
+        changed.append("muted_kinds")
+    for name in ("push_enabled", "email_enabled"):
+        if fields.get(name) is not None:
+            setattr(preference, name, bool(fields[name]))
+            changed.append(name)
+    if changed:
+        preference.save(update_fields=[*changed, "updated_at"])
+    return preference

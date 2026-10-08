@@ -52,7 +52,7 @@ export function SnippetDetail({ id, initial }: { id: string; initial?: PublicSni
       tags: s.tags,
       date: s.updated_at,
       isPublic: s.is_public,
-      author: profile ? { id: profile.id, username: profile.username, display_name: profile.display_name || profile.username, avatar_url: profile.avatar_url } : null,
+      author: profile ? { id: profile.id, username: profile.username, display_name: profile.display_name || profile.username, avatar_url: profile.avatar_url, location: profile.location, stack: profile.stack?.slice(0, 3) ?? [], karma: profile.karma_score ?? 0, badges: profile.badges?.slice(0, 2) ?? [] } : null,
     };
   }
 

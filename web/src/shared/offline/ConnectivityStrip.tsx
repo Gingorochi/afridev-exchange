@@ -1,6 +1,6 @@
 'use client';
 
-import { CloudOff, RefreshCw, Wifi, WifiLow } from 'lucide-react';
+import { CloudOff, RefreshCw, Wifi } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { useIsClient } from '@/shared/hooks';
@@ -11,8 +11,8 @@ import { useNetworkQuality } from './useNetworkStatus';
 import { useOutbox } from './useOutbox';
 
 /**
- * Micro-bandeau de connectivité (DESIGN.md) : gris hors ligne, ambre en réseau lent,
- * vert quelques secondes au retour du réseau. Invisible quand tout va bien.
+ * Micro-bandeau de connectivité (DESIGN.md) : gris hors ligne, vert quelques secondes
+ * au retour du réseau. Invisible sinon (y compris en réseau lent).
  */
 export function ConnectivityStrip() {
   const isClient = useIsClient();
@@ -33,7 +33,7 @@ export function ConnectivityStrip() {
 
   if (!isClient) return null;
 
-  let tone: 'offline' | 'slow' | 'online' | null = null;
+  let tone: 'offline' | 'online' | null = null;
   let message = '';
   if (network === 'offline') {
     tone = 'offline';
@@ -43,20 +43,16 @@ export function ConnectivityStrip() {
   } else if (backOnline || pending) {
     tone = 'online';
     message = pending ? `De retour en ligne — envoi de ${pending} élément${pending > 1 ? 's' : ''}…` : 'De retour en ligne';
-  } else if (network === 'slow') {
-    tone = 'slow';
-    message = 'Réseau lent — aperçus médias désactivés, texte prioritaire';
   }
   if (!tone) return null;
 
-  const Icon = tone === 'offline' ? CloudOff : tone === 'slow' ? WifiLow : Wifi;
+  const Icon = tone === 'offline' ? CloudOff : Wifi;
   return (
     <div
       role="status"
       className={cn(
         'flex h-8 items-center justify-between gap-2 px-4 font-mono text-label-sm',
         tone === 'offline' && 'bg-offline text-white',
-        tone === 'slow' && 'bg-tertiary-soft text-on-tertiary-soft',
         tone === 'online' && 'bg-secondary-soft text-on-secondary-soft',
       )}
     >

@@ -54,7 +54,7 @@ export function Menu({
             id={id}
             role="menu"
             className={cn(
-              'absolute top-full z-40 mt-1.5 min-w-56 rounded-xl border border-line bg-card p-1.5 shadow-raised',
+              'animate-pop absolute top-full z-40 mt-1.5 min-w-56 rounded-xl border border-line bg-card p-1 shadow-raised',
               align === 'end' ? 'right-0' : 'left-0',
               className,
             )}
@@ -68,7 +68,7 @@ export function Menu({
 }
 
 const ITEM =
-  'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-body-md text-ink transition-colors hover:bg-container [&_svg]:size-[18px] [&_svg]:text-ink-muted';
+  'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-body-sm text-ink transition-colors outline-none hover:bg-container focus-visible:bg-container [&_svg]:size-4 [&_svg]:text-ink-muted';
 
 export function MenuItem({
   href,
@@ -106,9 +106,9 @@ export function MenuItem({
 }
 
 export function MenuSeparator() {
-  return <div role="separator" className="my-1.5 h-px bg-line" />;
+  return <div role="separator" className="-mx-1 my-1 h-px bg-line" />;
 }
 
 export function MenuLabel({ children }: { children: React.ReactNode }) {
-  return <div className="px-3 pt-1.5 pb-1 text-label-md font-semibold text-ink-faint uppercase">{children}</div>;
+  return <div className="px-2.5 pt-1.5 pb-1 text-label-md font-medium text-ink-faint">{children}</div>;
 }

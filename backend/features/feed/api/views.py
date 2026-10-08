@@ -12,11 +12,13 @@ from rest_framework.views import APIView
 from core.pagination import CursorPagination
 from core.permissions import ReadOnlyOrAuthenticated
 from core.schema import CURSOR_PARAMETERS, paginated
+from features.hubs import selectors as hub_selectors
 
-from .. import selectors, services
+from .. import news, selectors, services
 from .serializers import (
     CommunitySerializer,
     LikeInputSerializer,
+    NewsItemSerializer,
     PollVoteInputSerializer,
     PostInputSerializer,
     PostOutputSerializer,
@@ -46,6 +48,7 @@ class FeedView(APIView):
             OpenApiParameter("kind", str, required=False),
             OpenApiParameter("author", str, required=False, description="UUID de l'auteur"),
             OpenApiParameter("tag", str, required=False),
+            OpenApiParameter("hub", str, required=False, description="Slug ou UUID du hub"),
             OpenApiParameter(
                 "sort",
                 str,
@@ -58,11 +61,16 @@ class FeedView(APIView):
         operation_id="feed_list",
     )
     def get(self, request):
+        hub = request.query_params.get("hub")
+        hub_id = hub_selectors.resolve_hub_id(value=hub) if hub else None
         posts = selectors.list_feed(
             kind=request.query_params.get("kind"),
             author_id=request.query_params.get("author"),
             tag=request.query_params.get("tag"),
+            hub_id=hub_id,
         )
+        if hub and hub_id is None:
+            posts = posts.none()
         paginator = CursorPagination()
         paginator.ordering = selectors.SORTS.get(request.query_params.get("sort", "hot"), "-hot")
         page = paginator.paginate_queryset(posts, request)
@@ -148,3 +156,53 @@ class CommunitiesView(APIView):
         return Response(
             CommunitySerializer(selectors.communities(since=since, limit=limit), many=True).data
         )
+
+
+class TechNewsView(APIView):
+    """Actu tech externe (Hacker News, DEV.to, médias RSS), la plus récente d'abord."""
+
+    permission_classes = [ReadOnlyOrAuthenticated]
+
+    @extend_schema(
+        operation_id="feed_news",
+        parameters=[
+            OpenApiParameter("source", str, required=False, enum=list(news.SOURCES)),
+            OpenApiParameter(
+                "lang", str, required=False, enum=["fr", "en"], description="Langue des médias"
+            ),
+            OpenApiParameter("q", str, required=False, description="Recherche plein texte"),
+        ],
+        responses=NewsItemSerializer(many=True),
+    )
+    def get(self, request):
+        rows = news.tech_news(
+            source=request.query_params.get("source", "all"),
+            lang=request.query_params.get("lang", ""),
+            q=request.query_params.get("q", ""),
+        )
+        return Response(NewsItemSerializer(rows, many=True).data)
+
+
+class HubFeedView(APIView):
+    """Fil d'un hub : GET /api/hubs/<slug>/feed/ (routé dans config/urls.py)."""
+
+    permission_classes = [ReadOnlyOrAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            *CURSOR_PARAMETERS,
+            OpenApiParameter("kind", str, required=False),
+            OpenApiParameter("sort", str, required=False, enum=list(selectors.SORTS)),
+        ],
+        responses=paginated(PostOutputSerializer),
+        operation_id="hubs_feed",
+    )
+    def get(self, request, slug):
+        hub = hub_selectors.get_hub_by_slug(slug=slug)
+        if hub is None:
+            raise NotFound("Hub introuvable.")
+        posts = selectors.list_feed(kind=request.query_params.get("kind"), hub_id=hub.id)
+        paginator = CursorPagination()
+        paginator.ordering = selectors.SORTS.get(request.query_params.get("sort", "hot"), "-hot")
+        page = paginator.paginate_queryset(posts, request)
+        return paginator.get_paginated_response(present_posts(page, viewer=request.user))
